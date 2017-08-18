@@ -25,7 +25,7 @@
 // ==/UserScript==
 
 var requests = [],
-    global_request_delay = 1,
+    global_request_delay = 1000,
     myuid,
     mysid;
 
