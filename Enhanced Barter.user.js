@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.8.0
+// @version      0.9.9.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -439,18 +439,21 @@ function massSendOffers(settings) {
                     var optins = JSON.parse(response.responseText);
                     $.getJSON("/i/" + offering.item_id + "/json2/", function(gameinfo) {
                         /*
-                    TODO:
-                     - Add platform exclusion support
-                     - Add tag exclusion support
-                     - Add tradable-wishlist-settings.ratio support
-                     - Add counter preference support
-                     - Add custom message support
-                     - Add multi-offerings support
-                     - Add better UI
-                     */
+                TODO:
+                 - Add platform exclusion support
+                 - Add tag exclusion support
+                 - Add tradable-wishlist-settings.ratio support
+                 - Add counter preference support
+                 - Add custom message support
+                 - Add multi-offerings support
+                 - Add better UI
+                 */
 
                         //SETUP
-                        settings.offering_to_group = settings.offering_to_group ? settings.offering_to_group : ["wishlist"]; //tradable, wishlist, library, blacklist
+                        settings.offering_to_group = settings.offering_to_group ? settings.offering_to_group : ["wishlist"]; //tradable, wishlist, unowned, library, blacklist
+                        if (settings.offering_to_group.includes("unowned") && !settings.offering_to_group.includes("wishlist")) {
+                            settings.offering_to_group.push("wishlist"); // All users in wishlist belong to unowned
+                        }
                         settings.max_offers = settings.max_offers ? settings.max_offers : Number.MAX_SAFE_INTEGER;
                         settings.max_offers = parseInt(settings.max_offers.replace(/all/gi, Number.MAX_SAFE_INTEGER));
                         settings.want_from_group = settings.want_from_group ? settings.want_from_group.filter(function(group) {
@@ -481,7 +484,7 @@ I'm responsible for this trade (not script author)!`;
                             users.forEach(function(userid) {
                                 let uid = parseInt(userid);
                                 let user = gameinfo.users[group][uid];
-                                if ((optins.hasOwnProperty(user.steam_id64) ? optins[user.steam_id64] : true) &&
+                                if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
                                     user.tradeable_count >= parseInt(settings.ratio[1]) &&
                                     trade_count <= settings.max_offers &&
                                     //user.wants_rating <= offering.rating &&
@@ -512,7 +515,7 @@ I'm responsible for this trade (not script author)!`;
                                             //console.log(ato2);
                                             if (ato2.length >= parseInt(settings.ratio[1]) && trade_count <= settings.max_offers) {
                                                 trade_count++;
-                                                $.post("/u/" + myuid + "/o/json/", {
+                                                var trade_data = {
                                                     "app_id": 2,
                                                     "app_version": versionToInteger(GM_info.script.version),
                                                     "to": uid,
@@ -523,7 +526,9 @@ I'm responsible for this trade (not script author)!`;
                                                     "add_to_offer_from[]": offering.item_id + "," + offering.line_id,
                                                     "add_to_offer_to[]": ato2,
                                                     "message": settings.message
-                                                });
+                                                };
+                                                console.log(uid, trade_data, trade_count);
+                                                $.post("/u/" + myuid + "/o/json/", trade_data);
                                             }
                                         });
                                     });
