@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.9.1
+// @version      0.9.10.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -387,12 +387,12 @@ function postSteamTradesComment(msg, steamid) {
 
 function setupAutomatedOffer() {
     var settings = {};
-    settings.offering_title = prompt("Offering:", "Exact Game Title");
+    settings.offering_titles = prompt("Offering:", "GameTitle1, GameTitle2, ...").split(",").map(Function.prototype.call, String.prototype.trim);
     settings.offering_to_group = prompt("Make offers to group:", "wishlist, unowned").split(",").map(Function.prototype.call, String.prototype.trim); //tradable, wishlist, unowned (, library, blacklist)
     settings.max_offers = prompt("Maximum number of trade offers you want to send (no limit = all):", "all");
     settings.want_from_group = prompt("I want games/DLC from group:", "wishlist, unowned").split(",").map(Function.prototype.call, String.prototype.trim); //tradable, wishlist, unowned, library
     settings.max_want = prompt("Maximum number of games/DLC I want to ask (no limit = all):", "25");
-    settings.ratio = prompt("Ratio of offering (mine) against want (yours):", "all:1");
+    settings.ratio = prompt("Ratio of offering (mine) against want (yours) (all = all):", "1:1");
     settings.expire_days = parseInt(prompt("Days until offer expires (max = 15):", "15"));
     settings.trading_cards_only = confirm("Do you only want games with trading cards? (cancel = no)");
     settings.unbundled_only = confirm("Do you only want unbundled games/DLC? (cancel = no)");
@@ -401,7 +401,7 @@ function setupAutomatedOffer() {
     if (settings.min_rating === null || isNaN(settings.min_rating) || !isFinite(settings.min_rating)) {
         settings.min_rating = false;
     }
-    settings.exclude_title_containing = prompt("Exclude games/DLC containing the term(s):", "DLC, pack");
+    settings.exclude_title_containing = prompt("Exclude games/DLC containing the term(s):", "DLC, pack, soundtrack");
     if (settings.exclude_title_containing !== null && settings.exclude_title_containing !== "") {
         settings.exclude_title_containing = settings.exclude_title_containing.split(",").map(Function.prototype.call, String.prototype.trim);
     } else {
@@ -411,34 +411,36 @@ function setupAutomatedOffer() {
     if (confirm("Are you sure you want to send this automated offer?\nBeware that this may cause traders to add you to their ignore list!")) {
         $("#automatedoffer").prop("disabled", true).val("Sending mass offers...");
         console.log("Sending mass offers...", settings);
-        massSendOffers(settings);
         alert("Initiated process of sending automated offers!\nCheck the javascript console (F12) and network tab for details.\nPlease don't close this tab until all offers have finished sending.\nThis may take a few minutes!");
+        massSendOffers(settings);
     }
 }
 
 function massSendOffers(settings) {
-    if (!settings.offering_title) return alert("No argument \"offering_title\". Example: \"The Forest\"");
+    if (settings.offering_titles.length === 0) return alert("No argument \"offering_titles\". Example: \"The Forest\"");
+    settings.offering_titles = settings.offering_titles ? new RegExp(settings.offering_titles.join("|"), "gi") : new RegExp(".^");
     $.getJSON("/u/" + myuid + "/t/json/", function(mytradables) {
-        var offering = false;
+        var offering = [];
+        var ato1 = [];
         for (var platformid in mytradables.by_platform) {
             for (var tradeid in mytradables.by_platform[platformid]) {
                 let tradable = mytradables.by_platform[platformid][tradeid];
-                if (containsInTradableTitle(tradable, settings.offering_title)) {
+                if (containsInTradableTitle(tradable, settings.offering_titles)) {
                     console.log("Tradable:", tradable);
-                    offering = tradable;
-                    break;
+                    tradable.users = [];
+                    offering.push(tradable);
+                    ato1.push(tradable.item_id + "," + tradable.line_id);
                 }
             }
         }
-        if (!offering) return alert("Could not find tradable!\nPlease provide a more accurate name of your tradable and make sure this item is in your tradables list.");
+        if (offering.length === 0) return alert("Could not find tradable(s)!\nPlease provide a more accurate name of your tradable and make sure this item is in your tradables list.");
         syncLibrary(function() {
             GM_xmlhttpRequest({
                 method: "GET",
                 url: "https://royalgamer06.ga/barter/json.php",
                 onload: function(response) {
                     var optins = JSON.parse(response.responseText);
-                    $.getJSON("/i/" + offering.item_id + "/json2/", function(gameinfo) {
-                        /*
+                    /*
                 TODO:
                  - Add platform exclusion support
                  - Add tag exclusion support
@@ -449,91 +451,133 @@ function massSendOffers(settings) {
                  - Add better UI
                  */
 
-                        //SETUP
-                        settings.offering_to_group = settings.offering_to_group ? settings.offering_to_group : ["wishlist"]; //tradable, wishlist, unowned, library, blacklist
-                        if (settings.offering_to_group.includes("unowned") && !settings.offering_to_group.includes("wishlist")) {
-                            settings.offering_to_group.push("wishlist"); // All users in wishlist belong to unowned
-                        }
-                        settings.max_offers = settings.max_offers ? settings.max_offers : Number.MAX_SAFE_INTEGER;
-                        settings.max_offers = parseInt(settings.max_offers.replace(/all/gi, Number.MAX_SAFE_INTEGER));
-                        settings.want_from_group = settings.want_from_group ? settings.want_from_group.filter(function(group) {
-                            return !!group.toLowerCase().match(/^(tradable|wishlist|unowned|library)$/g);
-                        }) : ["wishlist"]; //tradable, wishlist, library, blacklist, unowned
-                        settings.max_want = settings.max_want ? settings.max_want : Number.MAX_SAFE_INTEGER;
-                        settings.max_want = parseInt(settings.max_want.replace(/all/gi, Number.MAX_SAFE_INTEGER));
-                        settings.ratio = settings.ratio ? settings.ratio.toLowerCase().trim() : "all:1";
-                        settings.ratio = settings.ratio.replace(/all/gi, "0").split(":");
-                        settings.expire_days = settings.expire_days ? settings.expire_days : 1000;
-                        settings.trading_cards_only = typeof settings.trading_cards_only !== "undefined" ? settings.trading_cards_only : false;
-                        settings.unbundled_only = typeof settings.unbundled_only !== "undefined" ? settings.unbundled_only : false;
-                        settings.exclude_givenaway = typeof settings.exclude_givenaway !== "undefined" ? settings.exclude_givenaway : false;
-                        //exclude_combined = typeof exclude_combined !== "undefined" ? exclude_combined : false;
-                        settings.min_rating = settings.min_rating ? settings.min_rating : 0;
-                        settings.exclude_title_containing = settings.exclude_title_containing ? new RegExp(settings.exclude_title_containing.join("|"), "gi") : new RegExp(".^");
-                        settings.message = settings.message ? settings.message : "";
-                        /*`This is an offer sent by this script: http://steamcommunity.com/groups/bartervg/discussions/6/1470841715930902039.
+                    //SETUP
+                    settings.offering_to_group = settings.offering_to_group ? settings.offering_to_group : ["wishlist"]; //tradable, wishlist, unowned, library, blacklist
+                    if (settings.offering_to_group.includes("unowned") && !settings.offering_to_group.includes("wishlist")) {
+                        settings.offering_to_group.push("wishlist"); // All users in wishlist belong to unowned
+                    }
+                    settings.max_offers = settings.max_offers ? settings.max_offers : Number.MAX_SAFE_INTEGER;
+                    settings.max_offers = parseInt(settings.max_offers.replace(/all/gi, Number.MAX_SAFE_INTEGER));
+                    settings.want_from_group = settings.want_from_group ? settings.want_from_group.filter(function(group) {
+                        return !!group.toLowerCase().match(/^(tradable|wishlist|unowned|library)$/g);
+                    }) : ["wishlist"]; //tradable, wishlist, library, blacklist, unowned
+                    settings.max_want = settings.max_want ? settings.max_want : Number.MAX_SAFE_INTEGER;
+                    settings.max_want = parseInt(settings.max_want.replace(/all/gi, Number.MAX_SAFE_INTEGER));
+                    settings.ratio = settings.ratio ? settings.ratio.toLowerCase().trim() : "all:1";
+                    settings.ratio = settings.ratio.replace(/all/gi, "0").split(":");
+                    settings.ratio[0] = parseInt(settings.ratio[0]);
+                    settings.ratio[1] = parseInt(settings.ratio[1]);
+                    settings.ratio[0] = Math.min(settings.ratio[0], offering.length);
+                    settings.expire_days = settings.expire_days ? settings.expire_days : 1000;
+                    settings.trading_cards_only = typeof settings.trading_cards_only !== "undefined" ? settings.trading_cards_only : false;
+                    settings.unbundled_only = typeof settings.unbundled_only !== "undefined" ? settings.unbundled_only : false;
+                    settings.exclude_givenaway = typeof settings.exclude_givenaway !== "undefined" ? settings.exclude_givenaway : false;
+                    //exclude_combined = typeof exclude_combined !== "undefined" ? exclude_combined : false;
+                    settings.min_rating = settings.min_rating ? settings.min_rating : 0;
+                    settings.exclude_title_containing = settings.exclude_title_containing ? new RegExp(settings.exclude_title_containing.join("|"), "gi") : new RegExp(".^");
+                    settings.message = settings.message ? settings.message : "";
+                    /*`This is an offer sent by this script: http://steamcommunity.com/groups/bartervg/discussions/6/1470841715930902039.
 You may unsubscribe from anyone's automated offers here: http://royalgamer06.ga/barter.
 I'm responsible for this trade (not script author)!`;
 */
-
-                        //EXECUTION
-                        var trade_count = 0;
-                        shuffle(settings.offering_to_group).forEach(function(group) {
-                            group = group.toLowerCase();
-                            var users = shuffle(Object.keys(gameinfo.users[group]));
-                            users.forEach(function(userid) {
-                                let uid = parseInt(userid);
-                                let user = gameinfo.users[group][uid];
-                                if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
-                                    user.tradeable_count >= parseInt(settings.ratio[1]) &&
-                                    trade_count <= settings.max_offers &&
-                                    //user.wants_rating <= offering.rating &&
-                                    (user.wants_unowned === 0 ? group === "wishlist" : true) &&
-                                    (user.wants_cards === 1 ? offering.cards > 0 : true) &&
-                                    (user.avoid_givenaway === 1 ? offering.givenaway === 0 : true) &&
-                                    (user.avoid_bundles === 1 ? offering.bundles_available === 0 : true)) {
-                                    $.getJSON("/u/" + uid.toString(16) + "/t/f/" + myuid + "/json/", function(tradable_groups) {
-                                        $.getJSON("/u/" + uid.toString(16) + "/t/json/", function(tradables) {
-                                            var ato2 = [];
-                                            var platforms = shuffle(Object.keys(tradables.by_platform));
-                                            platforms.forEach(function(platformid) {
-                                                var tradeids = shuffle(Object.keys(tradables.by_platform[platformid]));
-                                                tradeids.forEach(function(tradeid) {
-                                                    let tradable = tradables.by_platform[platformid][tradeid];
-                                                    if (ato2.length < settings.max_want &&
-                                                        tradable.extra > 0 &&
-                                                        isInWantGroup(tradable_groups, settings.want_from_group, tradable.item_id) &&
-                                                        !containsInTradableTitle(tradable, settings.exclude_title_containing) &&
-                                                        (settings.trading_cards_only ? tradable.cards > 0 : true) &&
-                                                        (settings.unbundled_only ? tradable.bundles_all === 0 : true) &&
-                                                        (settings.exclude_givenaway ? tradable.givenaway === 0 : true) &&
-                                                        (tradable.reviews_positive ? tradable.reviews_positive > settings.min_rating : true)) {
-                                                        ato2.push(tradable.item_id + "," + tradeid);
-                                                    }
-                                                });
-                                            });
-                                            //console.log(ato2);
-                                            if (ato2.length >= parseInt(settings.ratio[1]) && trade_count <= settings.max_offers) {
-                                                trade_count++;
-                                                var trade_data = {
-                                                    "app_id": 2,
-                                                    "app_version": versionToInteger(GM_info.script.version),
-                                                    "to": uid,
-                                                    "from_and_or": settings.ratio[0],
-                                                    "to_and_or": settings.ratio[1],
-                                                    "expire": settings.expire_days,
-                                                    "counter_preference": 1,
-                                                    "add_to_offer_from[]": offering.item_id + "," + offering.line_id,
-                                                    "add_to_offer_to[]": ato2,
-                                                    "message": settings.message
-                                                };
-                                                console.log(uid, trade_data, trade_count);
-                                                $.post("/u/" + myuid + "/o/json/", trade_data);
-                                            }
-                                        });
+                    var done = 0;
+                    offering.forEach(function(o, i) {
+                        let index = i;
+                        $.getJSON("/i/" + o.item_id + "/json2/", function(gameinfo) {
+                            //EXECUTION
+                            shuffle(settings.offering_to_group).forEach(function(group) {
+                                group = group.toLowerCase();
+                                var users = shuffle(Object.keys(gameinfo.users[group]));
+                                users.forEach(function(userid) {
+                                    let uid = parseInt(userid);
+                                    let user = gameinfo.users[group][uid];
+                                    console.log(user,
+                                               (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) ,
+                                        user.tradeable_count >= parseInt(settings.ratio[1]) ,
+                                        //user.wants_rating <= o.rating ,
+                                        (user.wants_unowned === 0 ? group === "wishlist" : true) ,
+                                        (user.wants_cards === 1 ? o.cards > 0 : true) ,
+                                        (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) ,
+                                        (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
+                                    if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
+                                        user.tradeable_count >= parseInt(settings.ratio[1]) &&
+                                        //user.wants_rating <= o.rating &&
+                                        (user.wants_unowned === 0 ? group === "wishlist" : true) &&
+                                        (user.wants_cards === 1 ? o.cards > 0 : true) &&
+                                        (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) &&
+                                        (user.avoid_bundles === 1 ? o.bundles_available === 0 : true)) {
+                                        offering[index].users.push(uid);
+                                    }
+                                });
+                            });
+                            done++;
+                            if (done >= offering.length) {
+                                var users = [];
+                                console.log(settings.ratio[0], offering.length, settings.ratio[0] === 0 || settings.ratio[0] >= offering.length);
+                                if (settings.ratio[0] === 0 || settings.ratio[0] >= offering.length) {
+                                    console.log("intersect");
+                                    users = offering[0].users;
+                                    offering.forEach(function(o, i) {
+                                        if (i !== 0) users = $(users).filter(o.users).get();
+                                    });
+                                } else {
+                                    console.log("union");
+                                    offering.forEach(function(o) {
+                                console.log(users, o.users);
+                                        users = users.concat(o.users);
                                     });
                                 }
-                            });
+                                console.log(users);
+                                var trade_count = 0;
+                                shuffle(users).forEach(function(uid) {
+                                    if (trade_count <= settings.max_offers) {
+                                        $.getJSON("/u/" + uid.toString(16) + "/t/f/" + myuid + "/json/", function(tradable_groups) {
+                                            if (trade_count <= settings.max_offers) {
+                                                $.getJSON("/u/" + uid.toString(16) + "/t/json/", function(t) {
+                                                    var ato2 = [];
+                                                    var tradables = {};
+                                                    for (platformid in t.by_platform) {
+                                                        // add platform restrictions here
+                                                        tradables = $.extend(tradables, t.by_platform[platformid]);
+                                                    }
+                                                    var tradeids = shuffle(Object.keys(tradables));
+                                                    tradeids.forEach(function(tradeid) {
+                                                        let tradable = tradables[tradeid];
+                                                        if (ato2.length < settings.max_want &&
+                                                            tradable.extra > 0 &&
+                                                            isInWantGroup(tradable_groups, settings.want_from_group, tradable.item_id) &&
+                                                            !containsInTradableTitle(tradable, settings.exclude_title_containing) &&
+                                                            (settings.trading_cards_only ? tradable.cards > 0 : true) &&
+                                                            (settings.unbundled_only ? tradable.bundles_all === 0 : true) &&
+                                                            (settings.exclude_givenaway ? tradable.givenaway === 0 : true) &&
+                                                            (tradable.reviews_positive ? tradable.reviews_positive > settings.min_rating : true)) {
+                                                            ato2.push(tradable.item_id + "," + tradeid);
+                                                        }
+                                                    });
+                                                    //console.log(ato2);
+                                                    if (ato2.length >= parseInt(settings.ratio[1]) && trade_count <= settings.max_offers) {
+                                                        trade_count++;
+                                                        var trade_data = {
+                                                            "app_id": 2,
+                                                            "app_version": versionToInteger(GM_info.script.version),
+                                                            "to": uid,
+                                                            "from_and_or": settings.ratio[0],
+                                                            "to_and_or": settings.ratio[1],
+                                                            "expire": settings.expire_days,
+                                                            "counter_preference": 1,
+                                                            "add_to_offer_from[]": ato1,
+                                                            "add_to_offer_to[]": ato2,
+                                                            "message": settings.message
+                                                        };
+                                                        console.log(uid, trade_data, trade_count);
+                                                        $.post("/u/" + myuid + "/o/json/", trade_data);
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                         });
                     });
                 }
