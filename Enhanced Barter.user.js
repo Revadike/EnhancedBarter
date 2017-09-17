@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.10.0
+// @version      0.9.11.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -168,7 +168,7 @@ function initBarter() {
                             $("#exchanges > fieldset:nth-child(" + i + ") input[disabled]").each(function() {
                                 this.removeAttribute("disabled");
                                 this.removeAttribute("title");
-                                this.name = "add_to_offer_1[]";
+                                this.name = "add_to_offer_" + (i > 3 ? "2" : "1") + "[]";
                                 this.id = $(this).find("+").attr("for");
                                 this.value = $(this).parent().find("a").attr("href").split("/")[4] + "," + $(this).find("+").attr("for").replace("edit", "");
                             });
@@ -401,7 +401,7 @@ function setupAutomatedOffer() {
     if (settings.min_rating === null || isNaN(settings.min_rating) || !isFinite(settings.min_rating)) {
         settings.min_rating = false;
     }
-    settings.exclude_title_containing = prompt("Exclude games/DLC containing the term(s):", "DLC, pack, soundtrack");
+    settings.exclude_title_containing = prompt("Exclude games/DLC containing the term(s):", "DLC, OST, pack, soundtrack");
     if (settings.exclude_title_containing !== null && settings.exclude_title_containing !== "") {
         settings.exclude_title_containing = settings.exclude_title_containing.split(",").map(Function.prototype.call, String.prototype.trim);
     } else {
