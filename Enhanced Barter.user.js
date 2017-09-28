@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.11.0
+// @version      0.9.12.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -387,7 +387,7 @@ function postSteamTradesComment(msg, steamid) {
 
 function setupAutomatedOffer() {
     var settings = {};
-    settings.offering_titles = prompt("Offering:", "GameTitle1, GameTitle2, ...").split(",").map(Function.prototype.call, String.prototype.trim);
+    settings.offering_titles = prompt("Offering (max ~= 6 games):", "GameTitle1, GameTitle2, ...").split(",").map(Function.prototype.call, String.prototype.trim);
     settings.offering_to_group = prompt("Make offers to group:", "wishlist, unowned").split(",").map(Function.prototype.call, String.prototype.trim); //tradable, wishlist, unowned (, library, blacklist)
     settings.max_offers = prompt("Maximum number of trade offers you want to send (no limit = all):", "all");
     settings.want_from_group = prompt("I want games/DLC from group:", "wishlist, unowned").split(",").map(Function.prototype.call, String.prototype.trim); //tradable, wishlist, unowned, library
@@ -447,8 +447,8 @@ function massSendOffers(settings) {
                  - Add tradable-wishlist-settings.ratio support
                  - Add counter preference support
                  - Add custom message support
-                 - Add multi-offerings support
                  - Add better UI
+                 - Don't include owned games in multi-offers
                  */
 
                     //SETUP
@@ -487,28 +487,30 @@ I'm responsible for this trade (not script author)!`;
                             //EXECUTION
                             shuffle(settings.offering_to_group).forEach(function(group) {
                                 group = group.toLowerCase();
-                                var users = shuffle(Object.keys(gameinfo.users[group]));
-                                users.forEach(function(userid) {
-                                    let uid = parseInt(userid);
-                                    let user = gameinfo.users[group][uid];
-                                    console.log(user,
-                                               (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) ,
-                                        user.tradeable_count >= parseInt(settings.ratio[1]) ,
-                                        //user.wants_rating <= o.rating ,
-                                        (user.wants_unowned === 0 ? group === "wishlist" : true) ,
-                                        (user.wants_cards === 1 ? o.cards > 0 : true) ,
-                                        (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) ,
-                                        (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
-                                    if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
-                                        user.tradeable_count >= parseInt(settings.ratio[1]) &&
-                                        //user.wants_rating <= o.rating &&
-                                        (user.wants_unowned === 0 ? group === "wishlist" : true) &&
-                                        (user.wants_cards === 1 ? o.cards > 0 : true) &&
-                                        (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) &&
-                                        (user.avoid_bundles === 1 ? o.bundles_available === 0 : true)) {
-                                        offering[index].users.push(uid);
-                                    }
-                                });
+                                if (gameinfo.users[group]) {
+                                    var users = shuffle(Object.keys(gameinfo.users[group]));
+                                    users.forEach(function(userid) {
+                                        let uid = parseInt(userid);
+                                        let user = gameinfo.users[group][uid];
+                                        console.log(user,
+                                                    (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) ,
+                                                    user.tradeable_count >= parseInt(settings.ratio[1]) ,
+                                                    //user.wants_rating <= o.rating ,
+                                                    (user.wants_unowned === 0 ? group === "wishlist" : true) ,
+                                                    (user.wants_cards === 1 ? o.cards > 0 : true) ,
+                                                    (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) ,
+                                                    (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
+                                        if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
+                                            user.tradeable_count >= parseInt(settings.ratio[1]) &&
+                                            //user.wants_rating <= o.rating &&
+                                            (user.wants_unowned === 0 ? group === "wishlist" : true) &&
+                                            (user.wants_cards === 1 ? o.cards > 0 : true) &&
+                                            (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) &&
+                                            (user.avoid_bundles === 1 ? o.bundles_available === 0 : true)) {
+                                            offering[index].users.push(uid);
+                                        }
+                                    });
+                                }
                             });
                             done++;
                             if (done >= offering.length) {
@@ -523,10 +525,11 @@ I'm responsible for this trade (not script author)!`;
                                 } else {
                                     console.log("union");
                                     offering.forEach(function(o) {
-                                console.log(users, o.users);
+                                        console.log(users, o.users);
                                         users = users.concat(o.users);
                                     });
                                 }
+                                users = [...new Set(users)]; //unique
                                 console.log(users);
                                 var trade_count = 0;
                                 shuffle(users).forEach(function(uid) {
