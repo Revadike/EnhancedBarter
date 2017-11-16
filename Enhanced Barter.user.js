@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.12.0
+// @version      0.9.13.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -25,7 +25,7 @@
 // ==/UserScript==
 
 var requests = [],
-    global_request_delay = 1000,
+    global_request_delay = 1,
     myuid,
     mysid;
 
@@ -421,7 +421,6 @@ function massSendOffers(settings) {
     settings.offering_titles = settings.offering_titles ? new RegExp(settings.offering_titles.join("|"), "gi") : new RegExp(".^");
     $.getJSON("/u/" + myuid + "/t/json/", function(mytradables) {
         var offering = [];
-        var ato1 = [];
         for (var platformid in mytradables.by_platform) {
             for (var tradeid in mytradables.by_platform[platformid]) {
                 let tradable = mytradables.by_platform[platformid][tradeid];
@@ -429,7 +428,6 @@ function massSendOffers(settings) {
                     console.log("Tradable:", tradable);
                     tradable.users = [];
                     offering.push(tradable);
-                    ato1.push(tradable.item_id + "," + tradable.line_id);
                 }
             }
         }
@@ -467,7 +465,6 @@ function massSendOffers(settings) {
                     settings.ratio = settings.ratio.replace(/all/gi, "0").split(":");
                     settings.ratio[0] = parseInt(settings.ratio[0]);
                     settings.ratio[1] = parseInt(settings.ratio[1]);
-                    settings.ratio[0] = Math.min(settings.ratio[0], offering.length);
                     settings.expire_days = settings.expire_days ? settings.expire_days : 1000;
                     settings.trading_cards_only = typeof settings.trading_cards_only !== "undefined" ? settings.trading_cards_only : false;
                     settings.unbundled_only = typeof settings.unbundled_only !== "undefined" ? settings.unbundled_only : false;
@@ -537,6 +534,11 @@ I'm responsible for this trade (not script author)!`;
                                         $.getJSON("/u/" + uid.toString(16) + "/t/f/" + myuid + "/json/", function(tradable_groups) {
                                             if (trade_count <= settings.max_offers) {
                                                 $.getJSON("/u/" + uid.toString(16) + "/t/json/", function(t) {
+                                                    var ato1 = [];
+                                                    offering.forEach(function(tradable) {
+                                                        if (tradable.users.includes(uid)) ato1.push(tradable.item_id + "," + tradable.line_id);
+                                                    });
+                                                    settings.ratio[0] = Math.min(settings.ratio[0], ato1.length);
                                                     var ato2 = [];
                                                     var tradables = {};
                                                     for (platformid in t.by_platform) {
@@ -557,7 +559,7 @@ I'm responsible for this trade (not script author)!`;
                                                             ato2.push(tradable.item_id + "," + tradeid);
                                                         }
                                                     });
-                                                    //console.log(ato2);
+                                                    console.log(ato1);
                                                     if (ato2.length >= parseInt(settings.ratio[1]) && trade_count <= settings.max_offers) {
                                                         trade_count++;
                                                         var trade_data = {
