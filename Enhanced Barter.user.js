@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.13.0
+// @version      0.9.14.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -16,83 +16,32 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
+// @grant        GM_addStyle
 // @grant        unsafeWindow
-// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js
+// @run-at       document-start
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @homepageURL  https://github.com/Royalgamer06/EnhancedBarter/
 // @supportURL   https://github.com/Royalgamer06/EnhancedBarter/issues
 // @downloadURL  https://github.com/Royalgamer06/EnhancedBarter/raw/master/Enhanced%20Barter.user.js
 // @updateURL    https://github.com/Royalgamer06/EnhancedBarter/raw/master/Enhanced%20Barter.user.js
 // ==/UserScript==
 
-var requests = [],
-    global_request_delay = 1,
-    myuid,
-    mysid;
-
+// ==Code==
 this.$ = this.jQuery = jQuery.noConflict(true);
+var requests = [],
+    requestRateLimit = 300,
+    myuid = null,
+    mysid = null;
 
-$.ajaxSetup({
-    beforeSend: function(xhr, options) {
-        var request = function() {
-            options.beforeSend = function() {
-                return true;
-            };
-            $.ajax(options);
-        };
-        requests.push(request);
-        return false;
-    }
-});
-
-setInterval(function() {
-    if (requests.length > 0) {
-        if (requests.length === 1) {
-            setTimeout(function() {
-                console.log("All ajax requests are served!");
-            }, global_request_delay);
-        }
-        console.log(requests.length + " Ajax requests remaining...\nThis will roughly take " + (requests.length * global_request_delay / 1000) + " seconds to complete.");
-        var request = requests.shift();
-        if (typeof request === "function") {
-            request();
-        }
-    }
-}, global_request_delay);
-
-$.fn.serializeObject = function() {
-    var o = {};
-    var a = this.serializeArray();
-    $.each(a, function() {
-        if (o[this.name] !== undefined) {
-            if (!o[this.name].push) {
-                o[this.name] = [o[this.name]];
-            }
-            o[this.name].push(this.value || "");
-        } else {
-            o[this.name] = this.value || "";
-        }
-    });
-    return o;
-};
-
-$.fn.zip = function(s) {
-    var o = $(s);
-    return this.map(function(i, e) {
-        return $(e).add($(o[i]));
-    });
-};
-
-$(document).ready(function() {
+function init() {
     if (location.host === "barter.vg") {
-        initBarter();
+        setTimeout(initBarter, 0);
     } else if (location.host === "www.steamtrades.com" && getURIParam("do") == "postcomments") {
-        initSteamTrades();
+        setTimeout(initSteamTrades, 0);
     }
-});
+}
 
 function initBarter() {
-    myuid = $("#signin").attr("href").split("/")[4];
-    mysid = $("abbr+ a:has(.icon)").length > 0 ? $("abbr+ a:has(.icon)").attr("href").split("/")[4] : 0;
     unsafeWindow.cancelOffers = cancelOffers;
     unsafeWindow.remindPendingOffers = remindPendingOffers;
     unsafeWindow.remindCompletedOffers = remindCompletedOffers;
@@ -105,33 +54,95 @@ function initBarter() {
     unsafeWindow.massSendOffers = massSendOffers;
     unsafeWindow.massSendMutualOffers = massSendMutualOffers;
     unsafeWindow.removeOwnedGamesFromPending = removeOwnedGamesFromPending;
-    if (location.href.indexOf("/u/") > -1) {
-        if (location.href.indexOf("/o/") > -1) {
-            if (location.href.indexOf(myuid) > -1 && $("input[value='Completed Offer']").length > 0) {
-                console.log("Found 'Completed Offer'");
-                $("input[value='Completed Offer']").click(function(ev) {
-                    ev.preventDefault();
+
+    GM_addStyle(`.spinner {
+        position: fixed;
+        left: -webkit-calc(50% - 35px);
+        left: -moz-calc(50% - 35px);
+        left: -o-calc(50% - 35px);
+        left: calc(50% - 35px);
+        top: -webkit-calc(50% - 35px);
+        top: -moz-calc(50% - 35px);
+        top: -o-calc(50% - 35px);
+        top: calc(50% - 35px);
+        height: 70px;
+        width: 70px;
+        margin: 0px auto;
+        -webkit-animation: rotation .6s infinite linear;
+        -moz-animation: rotation .6s infinite linear;
+        -o-animation: rotation .6s infinite linear;
+        animation: rotation .6s infinite linear;
+        border-left: 14px solid rgba(0, 104, 209, .15);
+        border-right: 14px solid rgba(0, 104, 209, .15);
+        border-bottom: 14px solid rgba(0, 104, 209, .15);
+        border-top: 14px solid rgba(0, 104, 209, .8);
+        border-radius: 100%;
+    }
+    @-webkit-keyframes rotation {
+        from { -webkit-transform: rotate(0deg); } to { -webkit-transform: rotate(359deg); }
+    }
+    @-moz-keyframes rotation {
+        from { -moz-transform: rotate(0deg); } to { -moz-transform: rotate(359deg); }
+    }
+    @-o-keyframes rotation {
+        from { -o-transform: rotate(0deg); } to { -o-transform: rotate(359deg); }
+    }
+    @keyframes rotation {
+        from { transform: rotate(0deg); } to { transform: rotate(359deg); }
+    }`);
+
+    setInterval(handleRequests, requestRateLimit);
+    $.ajaxSetup({
+        beforeSend: function(xhr, options) {
+            $("body").prepend('<div class="spinner"></div>');
+            var request = function() {
+                options.beforeSend = function() {
+                    return true;
+                };
+                $.ajax(options);
+            };
+            requests.push(request);
+            return false;
+        },
+        complete: $(".spinner").remove
+    });
+
+    $.fn.serializeObject = serializeObject;
+    $.fn.zip = zip;
+
+    $(document).ready(barterReady);
+}
+
+function barterReady() {
+    setTimeout(ajaxify, 0);
+    myuid = $("#signin").attr("href").split("/")[4];
+    mysid = $("abbr+ a:has(.icon)").length > 0 ? $("abbr+ a:has(.icon)").attr("href").split("/")[4] : 0;
+    if (location.pathname.includes("/u/")) {
+        if (location.pathname.includes("/o/")) {
+            if (location.pathname.includes(myuid) && $("input[value='Completed Offer']").length > 0) {
+                $("input[value='Completed Offer']").click(function(event) {
+                    event.preventDefault();
                     var steamid = $("a[href*='/steamcommunity.com/profiles/']:not([href*=" + mysid + "])").attr("href").split("/")[4];
                     var name = $("th:contains('Next Step')+ > a[href*='/steamcommunity.com/profiles/']").text().replace(" on Steam", "");
                     var msg = "＋REP " + name + " is an amazing trader, recommended! We successfully completed this trade: " + location.href + ". Thanks a lot for the trade!";
                     leaveFeedback(this, msg, steamid);
                 });
-            } else if (location.href.indexOf(myuid) > -1 && $(".activity").length > 0) {
+            } else if (location.pathname.includes(myuid) && $(".activity").length > 0) {
                 $(".activity").first().before(`<br>
-<strong>Or...  </strong>
-<input id="automatedoffer" type="submit" value="Begin Automated Offer"></input>
-<input id="removeowned" type="submit" value="Remove Owned Games From Pending Offers" style="float:right;"></input>`);
+                        <strong>Or...  </strong>
+                        <input id="automatedoffer" type="submit" value="Begin Automated Offer"></input>
+                        <input id="removeowned" type="submit" value="Remove Owned Games From Pending Offers" style="float:right;"></input>`);
                 $("#automatedoffer").click(setupAutomatedOffer);
                 $("#removeowned").click(confirmRemoveOwned);
                 $(".showMoreArea").after(`<p>
-<label for="offersearch">
-<strong>Filter: </strong>
-</label>
-<input id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 260px;"> 
-<input id="canceloffers" type="submit" value="Cancel Offers">
-<input id="messageoffers" type="submit" value="Message Offers">
-<input id="extendoffers" type="submit" value="Extend Expiration">
-</p>`);
+                        <label for="offersearch">
+                            <strong>Filter: </strong>
+                        </label>
+                        <input id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 260px;">
+                        <input id="canceloffers" type="submit" value="Cancel Offers">
+                        <input id="messageoffers" type="submit" value="Message Offers">
+                        <input id="extendoffers" type="submit" value="Extend Expiration">
+                    </p>`);
                 $("#offersearch").on("change keyup paste", function() {
                     var val = $(this).val();
                     $("#offers tr").each(function() {
@@ -142,15 +153,9 @@ function initBarter() {
                         }
                     });
                 });
-                $("#canceloffers").click(function() {
-                    cancelOffers();
-                });
-                $("#messageoffers").click(function() {
-                    messageOffers();
-                });
-                $("#extendoffers").click(function() {
-                    extendExpiry();
-                });
+                $("#canceloffers").click(cancelOffers);
+                $("#messageoffers").click(messageOffers);
+                $("#extendoffers").click(extendExpiry);
             }
             [3, 7].forEach(function(i) {
                 $("#exchanges > fieldset:nth-child(" + i + ")").append('<input type="submit" value="Invert all checkboxes" style="width:100%;height:2em;margin-bottom:.7em;" id="checkall' + i + '">');
@@ -161,8 +166,8 @@ function initBarter() {
                     return false;
                 });
                 $("#exchanges > fieldset:nth-child(" + i + ")").append('<input type="submit" value="Enable disabled tradables" style="width:100%;height:2em;margin-bottom:.7em;" id="enable' + i + '">');
-                $("#enable" + i).on("click", function(ev) {
-                    ev.preventDefault();
+                $("#enable" + i).on("click", function(event) {
+                    event.preventDefault();
                     if (confirm("Are you sure you want to enable disabled tradables? Make sure the other party is okay with this!")) {
                         setTimeout(function() {
                             $("#exchanges > fieldset:nth-child(" + i + ") input[disabled]").each(function() {
@@ -178,14 +183,6 @@ function initBarter() {
                 });
             });
         }
-    } else if (location.href.indexOf("/i/") > -1) {
-        Array.from(document.getElementById("swishlist").parentNode.getElementsByTagName("a")).forEach(function(a) {
-            a.setAttribute("href", a.href.replace("w/m/", "") + "t/f/");
-            a.setAttribute("target", "_blank");
-            a.onclick = function() {
-                this.parentNode.parentNode.removeChild(this.parentNode);
-            };
-        });
     }
 }
 
@@ -195,18 +192,17 @@ function initSteamTrades() {
     var profile_id = $("[name=profile_id]").val();
     var xsrf_token = $("[name=xsrf_token]").val();
     if (profile_id !== undefined) {
-        var obj = {
+        var data = {
             do: "review_insert",
             xsrf_token: xsrf_token,
             profile_id: profile_id,
             rating: 1,
             description: msg
         };
-        console.log(obj);
         $.ajax({
             url: "https://www.steamtrades.com/ajax.php",
             method: "POST",
-            data: obj,
+            data: data,
             success: function() {
                 unsafeWindow.close();
             }
@@ -214,6 +210,21 @@ function initSteamTrades() {
     } else {
         console.log("Already left feedback previously");
         unsafeWindow.close();
+    }
+}
+
+function handleRequests() {
+    if (requests.length > 0) {
+        if (requests.length === 1) {
+            setTimeout(function() {
+                console.log("All ajax requests are served!");
+            }, requestRateLimit);
+        }
+        console.log(requests.length + " Ajax requests remaining...\nThis will roughly take " + (requests.length * requestRateLimit / 1000) + " seconds to complete.");
+        var request = requests.shift();
+        if (typeof request === "function") {
+            request();
+        }
     }
 }
 
@@ -277,10 +288,10 @@ function findIgnored() {
 }
 
 function findAllIgnored() {
-    $.getJSON("https://barter.vg/u/json/", function(json) {
+    $.getJSON("/u/json/", function(json) {
         for (var uid in json) {
             if (json[uid].active > -1) {
-                isIgnored("https://barter.vg/u/" + uid + "/");
+                isIgnored("/u/" + uid + "/");
             }
         }
     });
@@ -304,26 +315,6 @@ function remindPendingOffers() {
             offer_setup: 3
         });
     });
-    /*var msg = "Hello, I sent you an trade offer on barter. Could you please take a look and respond? I would appreciate that! Thank you!";
-    var steamids = [];
-    var ajaxDone = 0;
-    $.post("/u/" + myuid + "/o/", { filter_by_status: "pending" }, function(data) {
-        data = data.replace(/src="[^"]*"/ig, "");
-        var count = $(".active:contains('pending')", data).length;
-        $($(".active:contains('pending')", data).get().reverse()).each(function() {
-            let url = $(this).find("td+ td a").attr("href");
-            $.get(url, function(data) {
-                data = data.replace(/src="[^"]*"/ig, "");
-                var id = $("abbr+ a", data).attr("href").split("/")[4];
-                steamids.push(id);
-            }).always(function() {
-                ajaxDone++;
-                if (ajaxDone == count) {
-                    postSteamComment(msg, steamids);
-                }
-            });
-        });
-    });*/
 }
 
 function remindCompletedOffers() {
@@ -342,16 +333,6 @@ function remindCompletedOffers() {
                 offer_message: bartermsg,
                 offer_setup: 3
             });
-            /*$.get(url, function(data) {
-                data = data.replace(/src="[^"]*"/ig, "");
-                var id = $("abbr+ a", data).attr("href").split("/")[4];
-                steamids.push(id);
-            }).always(function() {
-                ajaxDone++;
-                if (ajaxDone == count) {
-                    postSteamComment(steammsg, steamids);
-                }
-            });*/
         });
     });
 }
@@ -421,6 +402,7 @@ function massSendOffers(settings) {
     settings.offering_titles = settings.offering_titles ? new RegExp(settings.offering_titles.join("|"), "gi") : new RegExp(".^");
     $.getJSON("/u/" + myuid + "/t/json/", function(mytradables) {
         var offering = [];
+        var ato1 = [];
         for (var platformid in mytradables.by_platform) {
             for (var tradeid in mytradables.by_platform[platformid]) {
                 let tradable = mytradables.by_platform[platformid][tradeid];
@@ -428,6 +410,7 @@ function massSendOffers(settings) {
                     console.log("Tradable:", tradable);
                     tradable.users = [];
                     offering.push(tradable);
+                    ato1.push(tradable.item_id + "," + tradable.line_id);
                 }
             }
         }
@@ -439,15 +422,15 @@ function massSendOffers(settings) {
                 onload: function(response) {
                     var optins = JSON.parse(response.responseText);
                     /*
-                TODO:
-                 - Add platform exclusion support
-                 - Add tag exclusion support
-                 - Add tradable-wishlist-settings.ratio support
-                 - Add counter preference support
-                 - Add custom message support
-                 - Add better UI
-                 - Don't include owned games in multi-offers
-                 */
+                    TODO:
+                    - Add platform exclusion support
+                    - Add tag exclusion support
+                    - Add tradable-wishlist-settings.ratio support
+                    - Add counter preference support
+                    - Add custom message support
+                    - Add better UI
+                    - Don't include owned games in multi-offers
+                    */
 
                     //SETUP
                     settings.offering_to_group = settings.offering_to_group ? settings.offering_to_group : ["wishlist"]; //tradable, wishlist, unowned, library, blacklist
@@ -465,6 +448,7 @@ function massSendOffers(settings) {
                     settings.ratio = settings.ratio.replace(/all/gi, "0").split(":");
                     settings.ratio[0] = parseInt(settings.ratio[0]);
                     settings.ratio[1] = parseInt(settings.ratio[1]);
+                    settings.ratio[0] = Math.min(settings.ratio[0], offering.length);
                     settings.expire_days = settings.expire_days ? settings.expire_days : 1000;
                     settings.trading_cards_only = typeof settings.trading_cards_only !== "undefined" ? settings.trading_cards_only : false;
                     settings.unbundled_only = typeof settings.unbundled_only !== "undefined" ? settings.unbundled_only : false;
@@ -473,10 +457,6 @@ function massSendOffers(settings) {
                     settings.min_rating = settings.min_rating ? settings.min_rating : 0;
                     settings.exclude_title_containing = settings.exclude_title_containing ? new RegExp(settings.exclude_title_containing.join("|"), "gi") : new RegExp(".^");
                     settings.message = settings.message ? settings.message : "";
-                    /*`This is an offer sent by this script: http://steamcommunity.com/groups/bartervg/discussions/6/1470841715930902039.
-You may unsubscribe from anyone's automated offers here: http://royalgamer06.ga/barter.
-I'm responsible for this trade (not script author)!`;
-*/
                     var done = 0;
                     offering.forEach(function(o, i) {
                         let index = i;
@@ -490,13 +470,13 @@ I'm responsible for this trade (not script author)!`;
                                         let uid = parseInt(userid);
                                         let user = gameinfo.users[group][uid];
                                         console.log(user,
-                                                    (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) ,
-                                                    user.tradeable_count >= parseInt(settings.ratio[1]) ,
-                                                    //user.wants_rating <= o.rating ,
-                                                    (user.wants_unowned === 0 ? group === "wishlist" : true) ,
-                                                    (user.wants_cards === 1 ? o.cards > 0 : true) ,
-                                                    (user.avoid_givenaway === 1 ? o.givenaway === 0 : true) ,
-                                                    (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
+                                            (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true),
+                                            user.tradeable_count >= parseInt(settings.ratio[1]),
+                                            //user.wants_rating <= o.rating ,
+                                            (user.wants_unowned === 0 ? group === "wishlist" : true),
+                                            (user.wants_cards === 1 ? o.cards > 0 : true),
+                                            (user.avoid_givenaway === 1 ? o.givenaway === 0 : true),
+                                            (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
                                         if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
                                             user.tradeable_count >= parseInt(settings.ratio[1]) &&
                                             //user.wants_rating <= o.rating &&
@@ -534,11 +514,6 @@ I'm responsible for this trade (not script author)!`;
                                         $.getJSON("/u/" + uid.toString(16) + "/t/f/" + myuid + "/json/", function(tradable_groups) {
                                             if (trade_count <= settings.max_offers) {
                                                 $.getJSON("/u/" + uid.toString(16) + "/t/json/", function(t) {
-                                                    var ato1 = [];
-                                                    offering.forEach(function(tradable) {
-                                                        if (tradable.users.includes(uid)) ato1.push(tradable.item_id + "," + tradable.line_id);
-                                                    });
-                                                    settings.ratio[0] = Math.min(settings.ratio[0], ato1.length);
                                                     var ato2 = [];
                                                     var tradables = {};
                                                     for (platformid in t.by_platform) {
@@ -559,7 +534,6 @@ I'm responsible for this trade (not script author)!`;
                                                             ato2.push(tradable.item_id + "," + tradeid);
                                                         }
                                                     });
-                                                    console.log(ato1);
                                                     if (ato2.length >= parseInt(settings.ratio[1]) && trade_count <= settings.max_offers) {
                                                         trade_count++;
                                                         var trade_data = {
@@ -774,13 +748,13 @@ function removeOwnedGamesFromPending() {
                     data = data.replace(/src="[^"]*"/ig, "");
                     var formdata = $("[name=propose_offer]", data).parents("form").serializeObject();
                     to_remove = [];
-                    $(".bold+ li , div~ .tradables .tradables_items_list li:nth-child(1)", data).each(function() {
-                        if ($(this).find("[alt*=avatar]:first").nextUntil("[alt*=avatar]").text().indexOf("library") > -1) {
+                    $("div+ .tradables_items_list li:nth-child(1) , .bold+ li", data).each(function() {
+                        if ($(this).find("[alt*=avatar]:first").nextUntil("[alt*=avatar]").text().includes("library")) {
                             to_remove.push($(this).find("[name='checked[]']").val());
                         }
                     });
                     if (to_remove.length > 0) {
-                        if ($(".bold+ li , div+ .tradables .tradables_items_list li:nth-child(1)", data).length <= to_remove.length) {
+                        if ($("div+ .tradables_items_list li:nth-child(1) , .bold+ li", data).length <= to_remove.length) {
                             $.post(url, {
                                 offer_setup: 3,
                                 cancel_offer: "☒ Cancel Offer"
@@ -795,11 +769,60 @@ function removeOwnedGamesFromPending() {
                         }
                     } else {
                         formdata.propose_offer = "Finish and Propose Offer";
-                        $.post(url, formdata);
                     }
                 });
             });
         });
+    });
+}
+
+
+function ajaxify() {
+    $("form").on("submit", formSubmitted);
+    $("[type=submit]").click(submitClicked);
+}
+
+function submitClicked(event) {
+    $("input[type=submit]", $(event.target).parents("form")).removeAttr("clicked");
+    $(event.target).attr("clicked", "true");
+}
+
+function formSubmitted(event) {
+    event.preventDefault();
+    var form = event.target;
+    var action = $(form).attr("action");
+    var data = $(form).serializeObject();
+    var submit = $("[type=submit][clicked=true]", form);
+    data[submit.attr("name")] = submit.attr("value");
+    submit.css("cursor", "not-allowed").prop("disabled", true);
+    $.post(action, data, parseHtml);
+}
+
+function parseHtml(html) {
+    document.documentElement.innerHTML = html;
+    initBarter();
+}
+
+function serializeObject() {
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name] !== undefined) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || "");
+        } else {
+            o[this.name] = this.value || "";
+        }
+    });
+    return o;
+}
+
+function zip(s) {
+    var o = $(s);
+    return this.map(function(i, e) {
+        return $(e).add($(o[i]));
     });
 }
 
@@ -843,3 +866,6 @@ function applySentenceCase(str) {
         return txt.charAt(0).toUpperCase() + txt.substr(1);
     });
 }
+
+init();
+// ==/Code==
