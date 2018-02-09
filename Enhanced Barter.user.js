@@ -790,10 +790,10 @@ function submitClicked(event) {
 function formSubmitted(event) {
     event.preventDefault();
     var form = event.target;
-    var method = $(form).attr("method") || "POST";
-    var action = $(form).attr("action");
-    var data = $(form).serializeObject();
     var submit = $("[type=submit][clicked=true]", form);
+    var action = submit.is("[formaction]") ? submit.attr("formaction") : $(form).attr("action");
+    var method = $(form).attr("method") || "POST";
+    var data = $(form).serializeObject();
     if (submit.attr("name") && submit.attr("value")) data[submit.attr("name")] = submit.attr("value");
     submit.css("cursor", "not-allowed").prop("disabled", true);
     $.ajax({
