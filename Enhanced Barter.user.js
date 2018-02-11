@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.16.0
+// @version      0.9.17.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
@@ -783,7 +783,7 @@ function ajaxify() {
 }
 
 function submitClicked(event) {
-    $("input[type=submit]", $(event.target).parents("form")).removeAttr("clicked");
+    $("[type=submit]", $(event.target).parents("form")).removeAttr("clicked");
     $(event.target).attr("clicked", "true");
 }
 
@@ -794,7 +794,7 @@ function formSubmitted(event) {
     var action = submit.is("[formaction]") ? submit.attr("formaction") : $(form).attr("action");
     var method = $(form).attr("method") || "POST";
     var data = $(form).serializeObject();
-    if (submit.attr("name") && submit.attr("value")) data[submit.attr("name")] = submit.attr("value");
+    if (submit.attr("name")) data[submit.attr("name")] = submit.attr("value") || "";
     submit.css("cursor", "not-allowed").prop("disabled", true);
     $.ajax({
         url: action,
