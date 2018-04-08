@@ -3,10 +3,9 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.17.0
+// @version      0.9.18.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
-// @include      https://www.steamtrades.com/user/*?do=postcomments&message=*
 // @connect      steamcommunity.com
 // @connect      store.steampowered.com
 // @connect      steamtrades.com
@@ -29,16 +28,12 @@
 // ==Code==
 this.$ = this.jQuery = jQuery.noConflict(true);
 var requests = [],
-    requestRateLimit = 300,
+    requestRateLimit = 250,
     myuid = null,
     mysid = null;
 
 function init() {
-    if (location.host === "barter.vg") {
-        setTimeout(initBarter, 0);
-    } else if (location.host === "www.steamtrades.com" && getURIParam("do") == "postcomments") {
-        setTimeout(initSteamTrades, 0);
-    }
+    setTimeout(initBarter, 0);
 }
 
 function initBarter() {
@@ -56,40 +51,40 @@ function initBarter() {
     unsafeWindow.removeOwnedGamesFromPending = removeOwnedGamesFromPending;
 
     GM_addStyle(`.spinner {
-        position: fixed;
-        left: -webkit-calc(50% - 35px);
-        left: -moz-calc(50% - 35px);
-        left: -o-calc(50% - 35px);
-        left: calc(50% - 35px);
-        top: -webkit-calc(50% - 35px);
-        top: -moz-calc(50% - 35px);
-        top: -o-calc(50% - 35px);
-        top: calc(50% - 35px);
-        height: 70px;
-        width: 70px;
-        margin: 0px auto;
-        -webkit-animation: rotation .6s infinite linear;
-        -moz-animation: rotation .6s infinite linear;
-        -o-animation: rotation .6s infinite linear;
-        animation: rotation .6s infinite linear;
-        border-left: 14px solid rgba(0, 104, 209, .15);
-        border-right: 14px solid rgba(0, 104, 209, .15);
-        border-bottom: 14px solid rgba(0, 104, 209, .15);
-        border-top: 14px solid rgba(0, 104, 209, .8);
-        border-radius: 100%;
-    }
-    @-webkit-keyframes rotation {
-        from { -webkit-transform: rotate(0deg); } to { -webkit-transform: rotate(359deg); }
-    }
-    @-moz-keyframes rotation {
-        from { -moz-transform: rotate(0deg); } to { -moz-transform: rotate(359deg); }
-    }
-    @-o-keyframes rotation {
-        from { -o-transform: rotate(0deg); } to { -o-transform: rotate(359deg); }
-    }
-    @keyframes rotation {
-        from { transform: rotate(0deg); } to { transform: rotate(359deg); }
-    }`);
+position: fixed;
+left: -webkit-calc(50% - 35px);
+left: -moz-calc(50% - 35px);
+left: -o-calc(50% - 35px);
+left: calc(50% - 35px);
+top: -webkit-calc(50% - 35px);
+top: -moz-calc(50% - 35px);
+top: -o-calc(50% - 35px);
+top: calc(50% - 35px);
+height: 70px;
+width: 70px;
+margin: 0px auto;
+-webkit-animation: rotation .6s infinite linear;
+-moz-animation: rotation .6s infinite linear;
+-o-animation: rotation .6s infinite linear;
+animation: rotation .6s infinite linear;
+border-left: 14px solid rgba(0, 104, 209, .15);
+border-right: 14px solid rgba(0, 104, 209, .15);
+border-bottom: 14px solid rgba(0, 104, 209, .15);
+border-top: 14px solid rgba(0, 104, 209, .8);
+border-radius: 100%;
+}
+@-webkit-keyframes rotation {
+from { -webkit-transform: rotate(0deg); } to { -webkit-transform: rotate(359deg); }
+}
+@-moz-keyframes rotation {
+from { -moz-transform: rotate(0deg); } to { -moz-transform: rotate(359deg); }
+}
+@-o-keyframes rotation {
+from { -o-transform: rotate(0deg); } to { -o-transform: rotate(359deg); }
+}
+@keyframes rotation {
+from { transform: rotate(0deg); } to { transform: rotate(359deg); }
+}`);
 
     setInterval(handleRequests, requestRateLimit);
     $.ajaxSetup({
@@ -129,20 +124,20 @@ function barterReady() {
                 });
             } else if (location.pathname.includes(myuid) && $(".activity").length > 0) {
                 $(".activity").first().before(`<br>
-                        <strong>Or...  </strong>
-                        <input id="automatedoffer" type="submit" value="Begin Automated Offer"></input>
-                        <input id="removeowned" type="submit" value="Remove Owned Games From Pending Offers" style="float:right;"></input>`);
+<strong>Or...  </strong>
+<input id="automatedoffer" type="submit" value="Begin Automated Offer"></input>
+<input id="removeowned" type="submit" value="Remove Owned Games From Pending Offers" style="float:right;"></input>`);
                 $("#automatedoffer").click(setupAutomatedOffer);
                 $("#removeowned").click(confirmRemoveOwned);
                 $(".showMoreArea").after(`<p>
-                        <label for="offersearch">
-                            <strong>Filter: </strong>
-                        </label>
-                        <input id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 260px;">
-                        <input id="canceloffers" type="submit" value="Cancel Offers">
-                        <input id="messageoffers" type="submit" value="Message Offers">
-                        <input id="extendoffers" type="submit" value="Extend Expiration">
-                    </p>`);
+<label for="offersearch">
+<strong>Filter: </strong>
+</label>
+<input id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 260px;">
+<input id="canceloffers" type="submit" value="Cancel Offers">
+<input id="messageoffers" type="submit" value="Message Offers">
+<input id="extendoffers" type="submit" value="Extend Expiration">
+</p>`);
                 $("#offersearch").on("change keyup paste", function() {
                     var val = $(this).val();
                     $("#offers tr").each(function() {
@@ -183,33 +178,6 @@ function barterReady() {
                 });
             });
         }
-    }
-}
-
-function initSteamTrades() {
-    var steamid = getURIParam("steamid");
-    var msg = applySentenceCase(getURIParam("message").replace(/\+/g, ' '));
-    var profile_id = $("[name=profile_id]").val();
-    var xsrf_token = $("[name=xsrf_token]").val();
-    if (profile_id !== undefined) {
-        var data = {
-            do: "review_insert",
-            xsrf_token: xsrf_token,
-            profile_id: profile_id,
-            rating: 1,
-            description: msg
-        };
-        $.ajax({
-            url: "https://www.steamtrades.com/ajax.php",
-            method: "POST",
-            data: data,
-            success: function() {
-                unsafeWindow.close();
-            }
-        });
-    } else {
-        console.log("Already left feedback previously");
-        unsafeWindow.close();
     }
 }
 
@@ -340,12 +308,42 @@ function remindCompletedOffers() {
 function leaveFeedback(elem, msg, steamid) {
     $(elem).val("Completing trade, sending feedback and syncing library...").attr("disabled", true);
     $.post($(elem).parents("form").attr("action"), $(elem).parents("form").serializeObject());
-    var steamids = [steamid];
-    //postSteamComment(msg, steamids);
-    postSteamTradesComment(msg, steamid);
     setPostTradeClipboard();
-    syncLibrary(function() {
-        location.reload();
+    postSteamTradesComment(msg, steamid, function() {
+        syncLibrary(function() {
+            location.reload();
+        });
+    });
+}
+
+function postSteamTradesComment(msg, steamid, callback) {
+    GM_xmlhttpRequest({
+        method: "GET",
+        url: "https://www.steamtrades.com/user/" + steamid,
+        onload: function(response) {
+            var profile_id = $("[name=profile_id]", response.responseText).val();
+            var xsrf_token = $("[name=xsrf_token]", response.responseText).val();
+            if (profile_id && xsrf_token) {
+                var data = {
+                    do: "review_insert",
+                    xsrf_token: xsrf_token,
+                    profile_id: profile_id,
+                    rating: 1,
+                    description: msg
+                };
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: "https://www.steamtrades.com/ajax.php",
+                    data: $.param(data),
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "Accept": "application/json, text/javascript, */*; q=0.01"
+                    },
+                    onload: callback,
+                    onerror: callback
+                });
+            }
+        }
     });
 }
 
@@ -360,10 +358,6 @@ function setPostTradeClipboard() {
     var sgprofile = "https://www.steamtrades.com/user/" + mysid;
     var msg = "Thanks for the trade!\nI completed the trade on barter.vg and left feedback on your steamtrades profile.\nIf you haven't done so already, could you please do the same?\n" + tradelink + "\n" + sgprofile;
     GM_setClipboard(msg);
-}
-
-function postSteamTradesComment(msg, steamid) {
-    window.open("https://www.steamtrades.com/user/" + steamid + "?do=postcomments&message=" + msg, "_blank");
 }
 
 function setupAutomatedOffer() {
@@ -470,13 +464,13 @@ function massSendOffers(settings) {
                                         let uid = parseInt(userid);
                                         let user = gameinfo.users[group][uid];
                                         console.log(user,
-                                            (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true),
-                                            user.tradeable_count >= parseInt(settings.ratio[1]),
-                                            //user.wants_rating <= o.rating ,
-                                            (user.wants_unowned === 0 ? group === "wishlist" : true),
-                                            (user.wants_cards === 1 ? o.cards > 0 : true),
-                                            (user.avoid_givenaway === 1 ? o.givenaway === 0 : true),
-                                            (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
+                                                    (optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true),
+                                                    user.tradeable_count >= parseInt(settings.ratio[1]),
+                                                    //user.wants_rating <= o.rating ,
+                                                    (user.wants_unowned === 0 ? group === "wishlist" : true),
+                                                    (user.wants_cards === 1 ? o.cards > 0 : true),
+                                                    (user.avoid_givenaway === 1 ? o.givenaway === 0 : true),
+                                                    (user.avoid_bundles === 1 ? o.bundles_available === 0 : true));
                                         if ((optins.hasOwnProperty(user.steam_id64_string) ? optins[user.steam_id64_string] : true) &&
                                             user.tradeable_count >= parseInt(settings.ratio[1]) &&
                                             //user.wants_rating <= o.rating &&
