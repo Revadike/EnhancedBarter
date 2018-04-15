@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Royalgamer06
 // @author       Royalgamer06
-// @version      0.9.18.0
+// @version      0.9.18.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @include      https://barter.vg/*
 // @connect      steamcommunity.com
@@ -210,12 +210,13 @@ function syncLibrary(callback) {
         onload: function(response) {
             var json = JSON.parse(response.responseText);
             var ownedApps = json.rgOwnedApps;
+            var ownedPackages = json.rgOwnedPackages;
             $.post("/u/" + myuid + "/l/e/", {
-                bulk_AppIDs: ownedApps.join(","),
-                add_AppIDs: "+ Add AppIDs",
+                bulk_IDs: "app/" + ownedApps.join(",app/") + ",sub/" + ownedPackages.join(",sub/"),
+                add_IDs: "+ Add IDs",
                 action: "Edit",
                 change_attempted: 1,
-                add_from: "AppIDs"
+                add_from: "IDs"
             }, function() {
                 if (callback) callback();
             });
