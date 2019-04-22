@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.0.0
+// @version      1.0.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -127,7 +127,7 @@ function barterReady() {
     // Any bundle page
     if ($(`[accesskey="b"]`).parent().hasClass(`nav-sel`)) {
         $(`.warnings`).append(`<li style="float: right">
-            <input id="togglebtn" onsubmit="void(0)" value="Hide/Show" type="submit" class="addTo offer bold pborder">
+            <input id="togglebtn" onsubmit="void(0)" value="Hide/Show" type="button" class="addTo offer bold pborder">
         </li>
         <li style="float: right">
             <select id="toggleselect" title="Select which items you want to hide or show" class="pborderHover">
@@ -143,11 +143,11 @@ function barterReady() {
     }
 
     // The creating offer page
-    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="submit" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" id="checkall" class="addTo pborder" onsubmit="void(0)"><input type="submit" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" id="enableall" class="addTo pborder" onsubmit="void(0)">`);
+    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="button" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" class="checkall addTo pborder" onsubmit="void(0)"><input type="button" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" class="enableall addTo pborder" onsubmit="void(0)">`);
     $(`[name=add_to_offer]`).val(`+ Add Selected`).css(`width`, `23.8%`).css(`margin-right`, `0.5%`);
 
-    $(`#checkall`).click(checkAllTradables);
-    $(`#enableall`).click(enableAllTradables);
+    $(`.checkall`).click(checkAllTradables);
+    $(`.enableall`).click(enableAllTradables);
 
     // Every next barter page will have the sign out link
     if ($(`#signin`).length === 0 || $(`abbr+ a:has(.icon)`).length === 0) {
@@ -164,7 +164,7 @@ function barterReady() {
 
     // The library page
     if ($(`[accesskey="l"]`).parent().hasClass(`nav-sel`) ) {
-        $(`[name="sync_list"]`).after(`<input type="submit" title="Sync ALL owned games and DLC" value="↻ Comprehensive Sync with Steam" style="margin-left: 0.5%" id="libsync" class="addTo gborder" onsubmit="void(0)">`);
+        $(`[name="sync_list"]`).after(`<input type="button" title="Sync ALL owned games and DLC" value="↻ Comprehensive Sync with Steam" style="margin-left: 0.5%" id="libsync" class="addTo gborder" onsubmit="void(0)">`);
         $(`#libsync`).click(clickLibSyncBtn);
     }
 
@@ -202,7 +202,7 @@ function barterReady() {
                     <option value="26">Z</option>
                 </select>
                 <input type="text" name="groupname" placeholder="E.g. Unowned collectors">
-                <input type="submit" value="Save" id="savegroup" class="addTo dborder">
+                <input type="button" value="Save" id="savegroup" class="addTo dborder">
             </p>
         </div>`);
 
@@ -224,7 +224,7 @@ function barterReady() {
 
     // The offer overview page
     if ($(`li:has([accesskey="o"])`).is(`.nav-sel`) && $(`.activity`).length > 0) {
-        $(`input.offer`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="submit" style="float: right;">`);
+        $(`input.offer`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="button" style="float: right;">`);
         $(`#automatedoffer`).parents(`form`).css(`width`, `100%`);
         $(`#automatedoffer`).click(setupAutomatedOffer);
         $(`.showMoreArea`).last().after(`<p>
@@ -232,9 +232,9 @@ function barterReady() {
                 <strong>Filter: </strong>
             </label>
             <input class="addTo pborder" id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 210px;">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="submit" onsubmit="void(0)" value="Cancel Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="submit" onsubmit="void(0)" value="Message Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="submit" onsubmit="void(0)" value="Change Expiration">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="button" onsubmit="void(0)" value="Cancel Offers">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="button" onsubmit="void(0)" value="Message Offers">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="button" onsubmit="void(0)" value="Change Expiration">
         </p>`);
 
         $(`#canceloffers`).click(cancelOffers);
@@ -279,12 +279,12 @@ function enableAllTradables(event) {
     $(event.target).parents(`.tradables`).find(`.collectionSelect input[disabled]`).get().forEach((elem) => {
         elem.removeAttribute(`disabled`);
         elem.removeAttribute(`title`);
-        elem.name = `add_to_offer_${$(`.enable:first`).is(event.target) ? `1` : `2`}[]`;
+        elem.name = `add_to_offer_${$(`.enableall:first`).is(event.target) ? `1` : `2`}[]`;
         elem.id = $(elem).find(`+`).attr(`for`);
-        elem.value = `${$(elem).parent().find(`a`).attr(`href`).split(`/`)[4]},${$(elem).find(`+`).attr(`for`).replace(`edit`, ``)}`;
+        elem.value = `${$(elem).parents(`tr`).data(`item-id`)},${$(elem).next().attr(`for`).replace(`edit`, ``)}`;
     });
 
-    $(`#enableall`).remove();
+    $(event.target).remove();
 }
 
 function checkAllTradables(event) {
@@ -548,7 +548,7 @@ function setupAutomatedOffer() {
         $(`#offerHeaderTo`).html(`To <strong>Qualified Users</strong> (select options below)`);
         $(`#offerHeaderTo`).parent().next().remove();
         $(`#offer`).replaceWith(`<form id=offer>${$(`#offer`).html()}</form>`);
-        $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="submit" onclick="location.reload()">`);
+        $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="button" onclick="location.reload()">`);
         $(`.tradables:nth-child(3) legend`).html(`${$(`.tradables:nth-child(3) legend`).html().replace(`<strong class="midsized offer">1</strong> of `, `<input min="1" id="from_ratio" name="from_ratio" type="number" value="1" style="width: 40px;"> of `)}...`);
 
         $(`form[action*=comments]`).remove();
@@ -1056,6 +1056,7 @@ async function sendAutomatedOffers(options) {
 
     changeAutomatedOfferStatus(2);
     $(`#offer`).replaceWith(`<div style="height: 28em; overflow: auto; border-bottom: 1px solid rgb(153, 17, 187);" id="log"></div>`);
+    showSpinner(`automatedoffers`);
 
     let offers = await getBarterOffers(parseInt(myuid, 16));
     let dailylimit = calculateStupidDailyLimit(offers); // barter's stupid daily offer limit
@@ -1067,7 +1068,10 @@ async function sendAutomatedOffers(options) {
 
     if (settings.synclib) {
         logHTML(`Syncing your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with your <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam user data</a>...`);
-        await syncLibrary();
+        await syncLibrary().catch((err) => {
+            console.log(err);
+            alert(err.message || err.name);
+        });
     }
 
     logHTML(`Getting list of users that opted out for automated offers..`);
@@ -1132,6 +1136,7 @@ async function sendAutomatedOffers(options) {
     if (matchedcount === 0) {
         logHTML(`Done!`);
         changeAutomatedOfferStatus(4);
+        hideSpinner(`automatedoffers`);
         return;
     }
 
@@ -1237,6 +1242,7 @@ async function sendAutomatedOffers(options) {
 
     logHTML(`Done!`);
     changeAutomatedOfferStatus(4);
+    hideSpinner(`automatedoffers`);
 }
 
 function getBarterOffers(uid) {
@@ -1368,7 +1374,7 @@ function request(options) {
     }
 
     return new Promise((res, rej) => GM_xmlhttpRequest({
-        "timeout": 6000,
+        "timeout": 180000,
         ...options,
         "onload": res,
         "onerror": rej,
