@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.0.1
+// @version      1.0.2
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -1426,7 +1426,7 @@ function passesMyPreferences(game, settings, want_items, platformid) {
     }
 
     if (pass && game.hasOwnProperty(`wishlist`) && settings.hasOwnProperty(`wishlistmax`)) {
-        pass = pass && game.wishlist < parseInt(settings.wishlistmin);
+        pass = pass && game.wishlist < parseInt(settings.wishlistmax);
     }
 
     if (pass && game.hasOwnProperty(`tradable`) && settings.hasOwnProperty(`tradablemax`)) {
