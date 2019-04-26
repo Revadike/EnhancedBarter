@@ -745,7 +745,7 @@ function setupAutomatedOffer() {
                     return val ? `Yes` : `No`;
                 }
 
-                return `${prefix}${val.toFixed(0)}${suffix}`;
+                return `${prefix}${Number(val).toFixed(0)}${suffix}`;
             };
 
             const range = {
@@ -777,8 +777,8 @@ function setupAutomatedOffer() {
                         $(slider).removeClass(`on`);
                     }
                 } else {
-                    $(`[name="min${slider.id}"]`).val(values[0]);
-                    $(`[name="max${slider.id}"]`).val(values[1]);
+                    $(`[name="min${slider.id}"]`).val(Number(values[0]).toFixed(0));
+                    $(`[name="max${slider.id}"]`).val(Number(values[1]).toFixed(0));
                 }
             });
 
@@ -997,7 +997,7 @@ async function sendAutomatedOffers(options) {
             const tradables = theirtradables.by_platform[platformid];
             Object.keys(tradables).forEach((line_id) => {
                 const tradable = tradables[line_id];
-                if (passesMyPreferences(tradable, settings, want_items, parseInt(platformid)) && !no_offers_items.includes(tradable.line_id)) {
+                if (passesMyPreferences(tradable, settings, want_items) && !no_offers_items.includes(tradable.line_id)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
             });
@@ -1225,8 +1225,8 @@ function request(options) {
     }));
 }
 
-function passesMyPreferences(game, settings, want_items, platformid) {
-    let pass = want_items.includes(game.item_id) && settings.platform.includes(platformid);
+function passesMyPreferences(game, settings, want_items) {
+    let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id);
 
     if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
         pass = pass && game.extra > 0;
@@ -1261,19 +1261,19 @@ function passesMyPreferences(game, settings, want_items, platformid) {
     }
 
     if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
-        pass = pass && inRange(settings.minprice, settings.maxprice, (settings.price || 0) * 100);
+        pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) * 100);
     }
 
     if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
-        pass = pass && inRange(settings.minwishlist, settings.maxwishlist, settings.wishlist || 0);
+        pass = pass && inRange(settings.minwishlist, settings.maxwishlist, game.wishlist || 0);
     }
 
     if (pass && settings.hasOwnProperty(`minlibrary`) && settings.hasOwnProperty(`maxlibrary`)) {
-        pass = pass && inRange(settings.minlibrary, settings.maxlibrary, settings.library || 0);
+        pass = pass && inRange(settings.minlibrary, settings.maxlibrary, game.library || 0);
     }
 
     if (pass && settings.hasOwnProperty(`mintradables`) && settings.hasOwnProperty(`maxtradables`)) {
-        pass = pass && inRange(settings.mintradables, settings.maxtradables, settings.tradable || 0);
+        pass = pass && inRange(settings.mintradables, settings.maxtradables, game.tradable || 0);
     }
 
     return pass;
