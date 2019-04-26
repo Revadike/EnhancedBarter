@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.0.0
+// @version      1.1.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -12,6 +12,7 @@
 // @connect      steamtrades.com
 // @connect      store.steampowered.com
 // @grant        GM_addStyle
+// @grant        GM_getResourceText
 // @grant        GM_info
 // @grant        GM_setClipboard
 // @grant        GM_xmlhttpRequest
@@ -20,6 +21,8 @@
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.4.4/fuse.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/history.js/1.8/bundled-uncompressed/html4+html5/jquery.history.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.js
+// @resource     noUiSliderCss https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.css
 // @homepageURL  https://github.com/Revadike/EnhancedBarter/
 // @supportURL   https://github.com/Revadike/EnhancedBarter/issues
 // @downloadURL  https://github.com/Revadike/EnhancedBarter/raw/master/Enhanced%20Barter.user.js
@@ -65,6 +68,7 @@ function barterReady() {
 
     // Every barter page
     setTimeout(ajaxify, 0);
+    GM_addStyle(GM_getResourceText(`noUiSliderCss`));
     GM_addStyle(stylesheet);
 
     $(`li.bottomline`).after(`<li class="bottomline" title="${GM_info.script.name} (${GM_info.script.version}) by ${GM_info.script.author}">
@@ -127,7 +131,7 @@ function barterReady() {
     // Any bundle page
     if ($(`[accesskey="b"]`).parent().hasClass(`nav-sel`)) {
         $(`.warnings`).append(`<li style="float: right">
-            <input id="togglebtn" onsubmit="void(0)" value="Hide/Show" type="submit" class="addTo offer bold pborder">
+            <input id="togglebtn" onsubmit="void(0)" value="Hide/Show" type="button" class="addTo offer bold pborder">
         </li>
         <li style="float: right">
             <select id="toggleselect" title="Select which items you want to hide or show" class="pborderHover">
@@ -143,11 +147,11 @@ function barterReady() {
     }
 
     // The creating offer page
-    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="submit" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" id="checkall" class="addTo pborder" onsubmit="void(0)"><input type="submit" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" id="enableall" class="addTo pborder" onsubmit="void(0)">`);
+    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="button" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" class="checkall addTo pborder" onsubmit="void(0)"><input type="button" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" class="enableall addTo pborder" onsubmit="void(0)">`);
     $(`[name=add_to_offer]`).val(`+ Add Selected`).css(`width`, `23.8%`).css(`margin-right`, `0.5%`);
 
-    $(`#checkall`).click(checkAllTradables);
-    $(`#enableall`).click(enableAllTradables);
+    $(`.checkall`).click(checkAllTradables);
+    $(`.enableall`).click(enableAllTradables);
 
     // Every next barter page will have the sign out link
     if ($(`#signin`).length === 0 || $(`abbr+ a:has(.icon)`).length === 0) {
@@ -164,7 +168,7 @@ function barterReady() {
 
     // The library page
     if ($(`[accesskey="l"]`).parent().hasClass(`nav-sel`) ) {
-        $(`[name="sync_list"]`).after(`<input type="submit" title="Sync ALL owned games and DLC" value="↻ Comprehensive Sync with Steam" style="margin-left: 0.5%" id="libsync" class="addTo gborder" onsubmit="void(0)">`);
+        $(`[name="sync_list"]`).after(`<input type="button" title="Sync ALL owned games and DLC" value="↻ Comprehensive Sync with Steam" style="margin-left: 0.5%" id="libsync" class="addTo gborder" onsubmit="void(0)">`);
         $(`#libsync`).click(clickLibSyncBtn);
     }
 
@@ -202,7 +206,7 @@ function barterReady() {
                     <option value="26">Z</option>
                 </select>
                 <input type="text" name="groupname" placeholder="E.g. Unowned collectors">
-                <input type="submit" value="Save" id="savegroup" class="addTo dborder">
+                <input type="button" value="Save" id="savegroup" class="addTo dborder">
             </p>
         </div>`);
 
@@ -224,7 +228,7 @@ function barterReady() {
 
     // The offer overview page
     if ($(`li:has([accesskey="o"])`).is(`.nav-sel`) && $(`.activity`).length > 0) {
-        $(`input.offer`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="submit" style="float: right;">`);
+        $(`input.offer`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="button" style="float: right;">`);
         $(`#automatedoffer`).parents(`form`).css(`width`, `100%`);
         $(`#automatedoffer`).click(setupAutomatedOffer);
         $(`.showMoreArea`).last().after(`<p>
@@ -232,9 +236,9 @@ function barterReady() {
                 <strong>Filter: </strong>
             </label>
             <input class="addTo pborder" id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 210px;">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="submit" onsubmit="void(0)" value="Cancel Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="submit" onsubmit="void(0)" value="Message Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="submit" onsubmit="void(0)" value="Change Expiration">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="button" onsubmit="void(0)" value="Cancel Offers">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="button" onsubmit="void(0)" value="Message Offers">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="button" onsubmit="void(0)" value="Change Expiration">
         </p>`);
 
         $(`#canceloffers`).click(cancelOffers);
@@ -279,12 +283,12 @@ function enableAllTradables(event) {
     $(event.target).parents(`.tradables`).find(`.collectionSelect input[disabled]`).get().forEach((elem) => {
         elem.removeAttribute(`disabled`);
         elem.removeAttribute(`title`);
-        elem.name = `add_to_offer_${$(`.enable:first`).is(event.target) ? `1` : `2`}[]`;
+        elem.name = `add_to_offer_${$(`.enableall:first`).is(event.target) ? `1` : `2`}[]`;
         elem.id = $(elem).find(`+`).attr(`for`);
-        elem.value = `${$(elem).parent().find(`a`).attr(`href`).split(`/`)[4]},${$(elem).find(`+`).attr(`for`).replace(`edit`, ``)}`;
+        elem.value = `${$(elem).parents(`tr`).data(`item-id`)},${$(elem).next().attr(`for`).replace(`edit`, ``)}`;
     });
 
-    $(`#enableall`).remove();
+    $(event.target).remove();
 }
 
 function checkAllTradables(event) {
@@ -542,13 +546,13 @@ function setupAutomatedOffer() {
             "offer_setup": 3,
             "cancel_offer": `☒ Cancel Offer`
         });
-        // $(`#main`).replaceWith($(`#main`, data));
+
         parseHtml(data);
         $(`#main h2`).html(`&#x1F916;&#xFE0E;✉ Automated Offers`);
         $(`#offerHeaderTo`).html(`To <strong>Qualified Users</strong> (select options below)`);
         $(`#offerHeaderTo`).parent().next().remove();
         $(`#offer`).replaceWith(`<form id=offer>${$(`#offer`).html()}</form>`);
-        $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="submit" onclick="location.reload()">`);
+        $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="button" onclick="location.reload()">`);
         $(`.tradables:nth-child(3) legend`).html(`${$(`.tradables:nth-child(3) legend`).html().replace(`<strong class="midsized offer">1</strong> of `, `<input min="1" id="from_ratio" name="from_ratio" type="number" value="1" style="width: 40px;"> of `)}...`);
 
         $(`form[action*=comments]`).remove();
@@ -565,289 +569,59 @@ function setupAutomatedOffer() {
             <!-- <li> <input type="checkbox" name="offering_to" id="tolibary" value="libary"> <label for="tolibary">...have them in their libary...</label></li> -->
             <li> <input type="checkbox" name="offering_to" id="totradable" value="tradable"> <label for="totradable">...have them for trade...</label></li>
         </ul>
-        <div style="margin: 2em 0; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);" class="offerDivide"><strong class="midsized">⇅</strong> ...in exchange for...</div>
-        <p>... <input min="1" id="to_ratio" name="to_ratio" type="number" value="1" style="width: 40px;"> of their tradables meeting these requirements...</p>
-        <fieldset>
-            <select name="limit" style="width: 24%;">
-                <option value="">[ limit offers ]</option>
-                <option value="">no limit (don't care)</option>
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="200">200</option>
-                <option value="500">500</option>
-                <option value="1000">1000</option>
-                <option value="2000">2000</option>
-                <option value="5000">5000</option>
-                <option value="10000">10000</option>
-            </select>
-            <select name="bundled" style="width:24%;">
-                <option value="">[ bundle count ]</option>
-                <option value="">may have been bundled (don't care)</option>
-                <option value="0">unbundled (0 bundles)</option>
-                <option value="1024">bundled (1 or more bundles)</option>
-                <option value="1">1 or fewer bundles</option>
-                <option value="2">2 or fewer bundles</option>
-                <option value="3">3 or fewer bundles</option>
-                <option value="4">4 or fewer bundles</option>
-                <option value="5">5 or fewer bundles</option>
-                <option value="6">6 or fewer bundles</option>
-                <option value="7">7 or fewer bundles</option>
-                <option value="8">8 or fewer bundles</option>
-                <option value="9">9 or fewer bundles</option>
-                <option value="10">10 or fewer bundles</option>
-            </select>
-            <select name="givenaway" style="width:24%;">
-                <option value="">[ giveaway count ]</option>
-                <option value="">may be given away (don't care)</option>
-                <option value="true">only given away</option>
-                <option value="false">no given away</option>
-            </select>
-            <select name="dlc" style="width:24%;">
-                <option value="">[ dlc ]</option>
-                <option value="">may include DLC (don't care)</option>
-                <option value="false">no DLC</option>
-                <option value="true">only DLC</option>
-            </select>
+        <div style="margin: 2em 0; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);" class="offerDivide">
+            <strong class="midsized">⇅</strong> ...in exchange for...
+        </div>
+        <p>
+            ... <input min="1" id="to_ratio" name="to_ratio" type="number" value="1" style="width: 40px;"> of their tradables meeting these requirements...
+        </p>
+        <fieldset style="border-top: 1px solid rgb(153, 17, 187);">
+            <div id="limit" data-max="10000" class="offerSlider"></div>
+            Offers (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. Note that barter has a daily limit.">?</a>)
         </fieldset>
         <fieldset>
-            <select name="reviews" title="browse by Steam user reviews % positive" style="width:19.2%;">
-                <option value="">[ review % ]</option>
-                <option value="">any review score (don't care)</option>
-                <option value="99">99% or better</option>
-                <option value="98">98% or better</option>
-                <option value="97">97% or better</option>
-                <option value="96">96% or better</option>
-                <option value="95">95% or better</option>
-                <option value="94">94% or better</option>
-                <option value="93">93% or better</option>
-                <option value="92">92% or better</option>
-                <option value="91">91% or better</option>
-                <option value="90">90% or better</option>
-                <option value="85">85% or better</option>
-                <option value="80">80% or better</option>
-                <option value="75">75% or better</option>
-                <option value="70">70% or better</option>
-                <option value="60">60% or better</option>
-                <option value="50">50% or better</option>
-                <option value="40">40% or better</option>
-                <option value="30">30% or better</option>
-                <option value="20">20% or better</option>
-                <option value="10">10% or better</option>
-            </select>
-            <select name="reviewcount" title="at least this many Steam user reviews" style="width:19.2%;">
-                <option value="">[ reviews ]</option>
-                <option value="">any number of reviews (don't care)</option>
-                <option value="10">10 or more reviews</option>
-                <option value="20">20 or more reviews</option>
-                <option value="40">40 or more reviews</option>
-                <option value="80">80 or more reviews</option>
-                <option value="160">160 or more reviews</option>
-                <option value="320">320 or more reviews</option>
-                <option value="640">640 or more reviews</option>
-                <option value="1280">1280 or more reviews</option>
-                <option value="2560">2560 or more reviews</option>
-                <option value="5120">5120 or more reviews</option>
-                <option value="10240">10240 or more reviews</option>
-                <option value="20480">20480 or more reviews</option>
-                <option value="40960">40960 or more reviews</option>
-                <option value="81920">81920 or more reviews</option>
-                <option value="163840">163840 or more reviews</option>
-            </select>
-            <select name="cards" title="show only games with Steam trading cards" style="width:19.2%;">
-                <option value="">[ cards ]</option>
-                <option value="">may have cards (don't care)</option>
-                <option value="true">only with cards</option>
-                <option value="false">only without cards</option>
-            </select>
-            <select name="achievements" title="show games with Steam achievements" style="width:19.2%;">
-                <option value="">[ achievements ]</option>
-                <option value="">may have achievements (don't care)</option>
-                <option value="true">only with achievements</option>
-                <option value="false">only without achievements</option>
-            </select>
-            <select name="price" title="filter by US Steam store price" style="width:19.2%;">
-                <option value="">[ price ]</option>
-                <option value="">any price (don't care)</option>
-                <option value="150">$150 or more</option>
-                <option value="140">$140 or more</option>
-                <option value="130">$130 or more</option>
-                <option value="120">$120 or more</option>
-                <option value="110">$110 or more</option>
-                <option value="100">$100 or more</option>
-                <option value="95">$95 or more</option>
-                <option value="90">$90 or more</option>
-                <option value="85">$85 or more</option>
-                <option value="80">$80 or more</option>
-                <option value="75">$75 or more</option>
-                <option value="70">$70 or more</option>
-                <option value="65">$65 or more</option>
-                <option value="60">$60 or more</option>
-                <option value="55">$55 or more</option>
-                <option value="50">$50 or more</option>
-                <option value="45">$45 or more</option>
-                <option value="40">$40 or more</option>
-                <option value="35">$35 or more</option>
-                <option value="30">$30 or more</option>
-                <option value="29">$29 or more</option>
-                <option value="28">$28 or more</option>
-                <option value="27">$27 or more</option>
-                <option value="26">$26 or more</option>
-                <option value="25">$25 or more</option>
-                <option value="24">$24 or more</option>
-                <option value="23">$23 or more</option>
-                <option value="22">$22 or more</option>
-                <option value="21">$21 or more</option>
-                <option value="20">$20 or more</option>
-                <option value="19">$19 or more</option>
-                <option value="18">$18 or more</option>
-                <option value="17">$17 or more</option>
-                <option value="16">$16 or more</option>
-                <option value="15">$15 or more</option>
-                <option value="14">$14 or more</option>
-                <option value="13">$13 or more</option>
-                <option value="12">$12 or more</option>
-                <option value="11">$11 or more</option>
-                <option value="10">$10 or more</option>
-                <option value="9">$9 or more</option>
-                <option value="8">$8 or more</option>
-                <option value="7">$7 or more</option>
-                <option value="6">$6 or more</option>
-                <option value="5">$5 or more</option>
-                <option value="4">$4 or more</option>
-                <option value="3">$3 or more</option>
-                <option value="2">$2 or more</option>
-                <option value="1">$1 or more</option>
-            </select>
+            <div id="DLC" data-max="1" class="offerSlider"></div>
+            Include DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC?">?</a>)
         </fieldset>
         <fieldset>
-            <select name="wishlistmax" title="filter by wishlist count" style="width: 32%;">
-                <option value="">[ wishlist max count ]</option>
-                <option value="">any wishlist barter users count (don't care)</option>
-                <option value="700">700 or less</option>
-                <option value="600">600 or less</option>
-                <option value="500">500 or less</option>
-                <option value="400">400 or less</option>
-                <option value="300">300 or less</option>
-                <option value="250">250 or less</option>
-                <option value="200">200 or less</option>
-                <option value="175">175 or less</option>
-                <option value="150">150 or less</option>
-                <option value="125">125 or less</option>
-                <option value="100">100 or less</option>
-                <option value="75">75 or less</option>
-                <option value="50">50 or less</option>
-                <option value="25">25 or less</option>
-                <option value="10">10 or less</option>
-                <option value="1">1 or less</option>
-                <option value="0">0 (nobody wishlisted it)</option>
-            </select>
-            <select name="librarymax" title="filter by barter users library count" style="width: 32%;">
-                <option value="">[ library max count ]</option>
-                <option value="">any library count (don't care)</option>
-                <option value="700">700 or less</option>
-                <option value="600">600 or less</option>
-                <option value="500">500 or less</option>
-                <option value="400">400 or less</option>
-                <option value="300">300 or less</option>
-                <option value="250">250 or less</option>
-                <option value="200">200 or less</option>
-                <option value="175">175 or less</option>
-                <option value="150">150 or less</option>
-                <option value="125">125 or less</option>
-                <option value="100">100 or less</option>
-                <option value="75">75 or less</option>
-                <option value="50">50 or less</option>
-                <option value="25">25 or less</option>
-                <option value="10">10 or less</option>
-                <option value="1">1 or less</option>
-                <option value="0">0 (nobody owns it)</option>
-            </select>
-            <select name="tradablemax" title="filter by barter users tradable count" style="width: 32%;">
-                <option value="">[ tradable max count ]</option>
-                <option value="">any tradable count (don't care)</option>
-                <option value="700">700 or less</option>
-                <option value="600">600 or less</option>
-                <option value="500">500 or less</option>
-                <option value="400">400 or less</option>
-                <option value="300">300 or less</option>
-                <option value="250">250 or less</option>
-                <option value="200">200 or less</option>
-                <option value="175">175 or less</option>
-                <option value="150">150 or less</option>
-                <option value="125">125 or less</option>
-                <option value="100">100 or less</option>
-                <option value="75">75 or less</option>
-                <option value="50">50 or less</option>
-                <option value="25">25 or less</option>
-                <option value="10">10 or less</option>
-                <option value="1">1 or less</option>
-                <option value="0">0 (nobody has it for trade)</option>
-            </select>
+            <div id="givenaway" data-max="1" class="offerSlider"></div>
+            Include given away (<a style="cursor: help; text-decoration: none;" title="Include games that are free or have been given away before?">?</a>)
         </fieldset>
         <fieldset>
-            <select name="wishlistmin" title="filter by wishlist count" style="width: 32%;">
-                <option value="">[ wishlist min count ]</option>
-                <option value="">any wishlist count (don't care)</option>
-                <option value="700">700 or more</option>
-                <option value="600">600 or more</option>
-                <option value="500">500 or more</option>
-                <option value="400">400 or more</option>
-                <option value="300">300 or more</option>
-                <option value="250">250 or more</option>
-                <option value="200">200 or more</option>
-                <option value="175">175 or more</option>
-                <option value="150">150 or more</option>
-                <option value="125">125 or more</option>
-                <option value="100">100 or more</option>
-                <option value="75">75 or more</option>
-                <option value="50">50 or more</option>
-                <option value="25">25 or more</option>
-                <option value="10">10 or more</option>
-                <option value="1">1 or more</option>
-            </select>
-            <select name="librarymin" title="filter by barter users library count" style="width: 32%;">
-                <option value="">[ library min count ]</option>
-                <option value="">any library count (don't care)</option>
-                <option value="700">700 or more</option>
-                <option value="600">600 or more</option>
-                <option value="500">500 or more</option>
-                <option value="400">400 or more</option>
-                <option value="300">300 or more</option>
-                <option value="250">250 or more</option>
-                <option value="200">200 or more</option>
-                <option value="175">175 or more</option>
-                <option value="150">150 or more</option>
-                <option value="125">125 or more</option>
-                <option value="100">100 or more</option>
-                <option value="75">75 or more</option>
-                <option value="50">50 or more</option>
-                <option value="25">25 or more</option>
-                <option value="10">10 or more</option>
-                <option value="1">1 or more</option>
-            </select>
-            <select name="tradablemin" title="filter by barter users tradable count" style="width: 32%;">
-                <option value="">[ tradable min count ]</option>
-                <option value="">any tradable count (don't care)</option>
-                <option value="700">700 or more</option>
-                <option value="600">600 or more</option>
-                <option value="500">500 or more</option>
-                <option value="400">400 or more</option>
-                <option value="300">300 or more</option>
-                <option value="250">250 or more</option>
-                <option value="200">200 or more</option>
-                <option value="175">175 or more</option>
-                <option value="150">150 or more</option>
-                <option value="125">125 or more</option>
-                <option value="100">100 or more</option>
-                <option value="75">75 or more</option>
-                <option value="50">50 or more</option>
-                <option value="25">25 or more</option>
-                <option value="10">10 or more</option>
-                <option value="1">1 or more</option>
-            </select>
+            <div id="bundles" data-max="100" class="offerSlider"></div>
+            Bundles count (<a style="cursor: help; text-decoration: none;" title="The number range of the game bundle count. Choose range 0-0 to only want never bundled games. Choose range 1-max to avoid never-bundled games.">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="cards" data-max="100" class="offerSlider"></div>
+            Cards count (<a style="cursor: help; text-decoration: none;" title="The number range of the game card count. Choose range 0-0 to only want games with no cards.">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="achievements" data-max="1000000" class="offerSlider"></div>
+            Achievements count (<a style="cursor: help; text-decoration: none;" title="The number range of the achievement count of a tradable. Choose range 0-0 to only want games with no achievements.">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="reviews" data-max="1000000" class="offerSlider"></div>
+            Review count (<a style="cursor: help; text-decoration: none;" title="The number range of the game review count. Choose range 0-0 to only want games with no reviews.">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="scores" data-max="100" data-suffix="%" class="offerSlider"></div>
+            Review score (<a style="cursor: help; text-decoration: none;" title="The percentage range of the game review score">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="price" data-max="10000" data-prefix="$" class="offerSlider"></div>
+            Price (<a style="cursor: help; text-decoration: none;" title="The price range of the game">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="wishlist" data-max="10000" class="offerSlider"></div>
+            Wishlist count (<a style="cursor: help; text-decoration: none;" title="The range of wishlist count, the number of Barter.vg users that have the game in their wishlist">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="library" data-max="10000" class="offerSlider"></div>
+            Library count (<a style="cursor: help; text-decoration: none;" title="The range of library count, the number of Barter.vg users that have the game in their library">?</a>)
+        </fieldset>
+        <fieldset style="border-bottom: 1px solid rgb(153, 17, 187);">
+            <div id="tradables" data-max="10000" class="offerSlider"></div>
+            Tradables count (<a style="cursor: help; text-decoration: none;" title="The range of tradables count, the number of Barter.vg users that have the game to trade">?</a>)
         </fieldset>
         <p style="float: left;">...from these platforms...</p>
         <p style="margin-left: 50%;">...from users who...</p>
@@ -942,7 +716,7 @@ function setupAutomatedOffer() {
         <p>
             <input type="checkbox" name="synclib" id="synclib" value="true" checked><label for="synclib">Synchronize your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam store userdata</a> first (RECOMMENDED).</label>
         </p>
-        <p><button id="massSendBtn" style="font-weight: bold; color: green; width: 100%; height: 2em; font-size: 1.2em; cursor: pointer;">Finish and Send Automated Offers</button>`);
+        <p><button id="massSendBtn" class="addTo gborder acceptOption" style="font-weight: bold; color: green; width: 100%; height: 2em; font-size: 1.2em; cursor: pointer;">Finish and Send Automated Offers</button>`);
         $(`#massSendBtn`).click((event) => {
             event.preventDefault();
             sendAutomatedOffers();
@@ -951,6 +725,67 @@ function setupAutomatedOffer() {
         $(`[name='add_to_offer_1[]']`).attr(`name`, `offering`);
         $(`#offerStatus+ div`).remove();
         $(`#offerStatus`).attr(`style`, `border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);`);
+
+        $(`.offerSlider`).get().forEach((slider) => {
+            const max = parseInt($(slider).data(`max`)) || 1000;
+            const digits = max.toString().split(``).length;
+            const prefix = $(slider).data(`prefix`) || ``;
+            const suffix = $(slider).data(`suffix`) || ``;
+            const isToggle = max === 1;
+
+            if (isToggle) {
+                $(slider).after(`<input type="hidden" value="true" name="${slider.id}">`);
+            } else {
+                $(slider).after(`<input type="hidden" value="0" name="min${slider.id}">`);
+                $(slider).after(`<input type="hidden" value="${max}" name="max${slider.id}">`);
+            }
+
+            const toggleTooltip = (val) => {
+                if (max === 1) {
+                    return val ? `Yes` : `No`;
+                }
+
+                return `${prefix}${val.toFixed(0)}${suffix}`;
+            };
+
+            const range = {
+                "min": 0,
+                "max": max
+            };
+
+            let percentage = 0;
+            for (let i = 1; i <= digits - 1; i++) {
+                percentage += 100 / (digits - 1);
+                range[`${percentage}%`] = Math.pow(10, i);
+            }
+
+            // eslint-disable-next-line no-undef
+            noUiSlider.create(slider, {
+                "start": isToggle ? max : [0, max],
+                "connect": !isToggle,
+                "behaviour": isToggle ? `none` : `drag-tap`,
+                "tooltips": [{ "to": toggleTooltip }].concat(isToggle ? [] : [{ "to": toggleTooltip }]),
+                "step": 1,
+                "range": range
+            }).on(`update`, (values) => {
+                if (isToggle) {
+                    const value = parseInt(values[0]);
+                    $(`[name="${slider.id}"]`).val(Boolean(value));
+                    if (value) {
+                        $(slider).addClass(`on`);
+                    } else {
+                        $(slider).removeClass(`on`);
+                    }
+                } else {
+                    $(`[name="min${slider.id}"]`).val(values[0]);
+                    $(`[name="max${slider.id}"]`).val(values[1]);
+                }
+            });
+
+            if (isToggle) {
+                $(slider).find(`.noUi-connects`).click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
+            }
+        });
     });
 }
 
@@ -1056,6 +891,7 @@ async function sendAutomatedOffers(options) {
 
     changeAutomatedOfferStatus(2);
     $(`#offer`).replaceWith(`<div style="height: 28em; overflow: auto; border-bottom: 1px solid rgb(153, 17, 187);" id="log"></div>`);
+    showSpinner(`automatedoffers`);
 
     let offers = await getBarterOffers(parseInt(myuid, 16));
     let dailylimit = calculateStupidDailyLimit(offers); // barter's stupid daily offer limit
@@ -1067,7 +903,10 @@ async function sendAutomatedOffers(options) {
 
     if (settings.synclib) {
         logHTML(`Syncing your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with your <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam user data</a>...`);
-        await syncLibrary();
+        await syncLibrary().catch((err) => {
+            console.log(err);
+            alert(err.message || err.name);
+        });
     }
 
     logHTML(`Getting list of users that opted out for automated offers..`);
@@ -1132,6 +971,7 @@ async function sendAutomatedOffers(options) {
     if (matchedcount === 0) {
         logHTML(`Done!`);
         changeAutomatedOfferStatus(4);
+        hideSpinner(`automatedoffers`);
         return;
     }
 
@@ -1174,7 +1014,14 @@ async function sendAutomatedOffers(options) {
 
     logHTML(`Found ${Object.keys(allmatches).length} matching traders!`);
 
-    const max = Math.min(settings.limit || Number.MAX_SAFE_INTEGER, Object.keys(allmatches).length);
+    if (Object.keys(allmatches).length < settings.minlimit) {
+        logHTML(`Not enough matches found. Done!`);
+        changeAutomatedOfferStatus(4);
+        hideSpinner(`automatedoffers`);
+        return;
+    }
+
+    const max = Math.min(settings.maxlimit, Object.keys(allmatches).length);
     logHTML(`Sending ${max} automated offers...`);
     changeAutomatedOfferStatus(3);
 
@@ -1237,6 +1084,7 @@ async function sendAutomatedOffers(options) {
 
     logHTML(`Done!`);
     changeAutomatedOfferStatus(4);
+    hideSpinner(`automatedoffers`);
 }
 
 function getBarterOffers(uid) {
@@ -1368,7 +1216,7 @@ function request(options) {
     }
 
     return new Promise((res, rej) => GM_xmlhttpRequest({
-        "timeout": 6000,
+        "timeout": 180000,
         ...options,
         "onload": res,
         "onerror": rej,
@@ -1380,67 +1228,52 @@ function request(options) {
 function passesMyPreferences(game, settings, want_items, platformid) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(platformid);
 
-    if (pass && game.hasOwnProperty(`extra`)) {
+    if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
         pass = pass && game.extra > 0;
     }
 
-    if (pass && game.hasOwnProperty(`bundles_all`) && settings.hasOwnProperty(`bundled`)) {
-        pass = pass && game.bundles_all <= settings.bundled;
-        if (settings.bundled === 1024) {
-            pass = pass && game.bundles_all > 0;
-        }
+    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`DLC`) && !settings.DLC) {
+        pass = pass && game.item_type.toLowerCase() !== `dlc`;
     }
 
-    if (pass && game.hasOwnProperty(`givenaway`) && settings.hasOwnProperty(`givenaway`)) {
-        pass = pass && game.givenaway > 0 === settings.givenaway;
+    if (pass && settings.hasOwnProperty(`givenaway`) && !settings.givenaway) {
+        pass = pass && (game.givenaway || 0) === 0;
     }
 
-    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`dlc`)) {
-        pass = pass && game.item_type.toLowerCase() === `dlc` === settings.dlc;
+    if (pass && settings.hasOwnProperty(`minbundles`) && settings.hasOwnProperty(`maxbundles`)) {
+        pass = pass && inRange(settings.minbundles, settings.maxbundles, game.bundles_all || 0);
     }
 
-    if (pass && game.hasOwnProperty(`reviews_positive`) && settings.hasOwnProperty(`reviews`)) {
-        pass = pass && game.reviews_positive >= settings.reviews;
+    if (pass && settings.hasOwnProperty(`mincards`) && settings.hasOwnProperty(`maxcards`)) {
+        pass = pass && inRange(settings.mincards, settings.maxcards, game.cards || 0);
     }
 
-    if (pass && game.hasOwnProperty(`reviews_total`) && settings.hasOwnProperty(`reviewcount`)) {
-        pass = pass && game.reviews_total >= settings.reviewcount;
+    if (pass && settings.hasOwnProperty(`minachievements`) && settings.hasOwnProperty(`maxachievements`)) {
+        pass = pass && inRange(settings.minachievements, settings.maxachievements, game.achievements || 0);
     }
 
-    if (pass && game.hasOwnProperty(`cards`) && settings.hasOwnProperty(`cards`)) {
-        pass = pass && game.cards > 0 === settings.cards;
+    if (pass && settings.hasOwnProperty(`minreviews`) && settings.hasOwnProperty(`maxreviews`)) {
+        pass = pass && inRange(settings.minreviews, settings.maxreviews, game.reviews_total || 0);
     }
 
-    if (pass && game.hasOwnProperty(`achievements`) && settings.hasOwnProperty(`achievements`)) {
-        pass = pass && game.achievements > 0 === settings.achievements;
+    if (pass && settings.hasOwnProperty(`minscores`) && settings.hasOwnProperty(`maxscores`)) {
+        pass = pass && inRange(settings.minscores, settings.maxscores, game.reviews_positive || 0);
     }
 
-    if (pass && game.hasOwnProperty(`price`) && settings.hasOwnProperty(`price`)) {
-        pass = pass && game.price >= settings.price * 100;
+    if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
+        pass = pass && inRange(settings.minprice, settings.maxprice, (settings.price || 0) * 100);
     }
 
-    if (pass && game.hasOwnProperty(`wishlist`) && settings.hasOwnProperty(`wishlistmax`)) {
-        pass = pass && game.wishlist < parseInt(settings.wishlistmin);
+    if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
+        pass = pass && inRange(settings.minwishlist, settings.maxwishlist, settings.wishlist || 0);
     }
 
-    if (pass && game.hasOwnProperty(`tradable`) && settings.hasOwnProperty(`tradablemax`)) {
-        pass = pass && game.tradable < parseInt(settings.tradablemax);
+    if (pass && settings.hasOwnProperty(`minlibrary`) && settings.hasOwnProperty(`maxlibrary`)) {
+        pass = pass && inRange(settings.minlibrary, settings.maxlibrary, settings.library || 0);
     }
 
-    if (pass && game.hasOwnProperty(`library`) && settings.hasOwnProperty(`librarymax`)) {
-        pass = pass && game.library < parseInt(settings.librarymax);
-    }
-
-    if (pass && game.hasOwnProperty(`wishlist`) && settings.hasOwnProperty(`wishlistmin`)) {
-        pass = pass && game.wishlist >= parseInt(settings.wishlistmin);
-    }
-
-    if (pass && game.hasOwnProperty(`tradable`) && settings.hasOwnProperty(`tradablemin`)) {
-        pass = pass && game.tradable >= parseInt(settings.tradablemin);
-    }
-
-    if (pass && game.hasOwnProperty(`library`) && settings.hasOwnProperty(`librarymin`)) {
-        pass = pass && game.library >= parseInt(settings.librarymin);
+    if (pass && settings.hasOwnProperty(`mintradables`) && settings.hasOwnProperty(`maxtradables`)) {
+        pass = pass && inRange(settings.mintradables, settings.maxtradables, settings.tradable || 0);
     }
 
     return pass;
@@ -1473,23 +1306,20 @@ function passesTheirPreferences(game, user, optins, group, offeringcount, expire
         }
     }
 
-    if (pass && game.hasOwnProperty(`cards`) && user.hasOwnProperty(`wants_cards`) && user.wants_cards === 1) {
-        pass = pass && game.cards > 0;
-        if (pass && game.hasOwnProperty(`cards_marketable`)) {
-            pass = pass && game.cards_marketable === 1;
-        }
+    if (pass && user.hasOwnProperty(`wants_cards`) && user.wants_cards === 1) {
+        pass = pass && (game.cards || 0) > 0 && (game.cards_marketable || 0) === 1;
     }
 
-    if (pass && game.hasOwnProperty(`achievements`) && user.hasOwnProperty(`wants_achievements`) && user.wants_achievements === 1) {
-        pass = pass && game.achievements > 0;
+    if (pass && user.hasOwnProperty(`wants_achievements`) && user.wants_achievements === 1) {
+        pass = pass && (game.achievements || 0) > 0;
     }
 
-    if (pass && game.hasOwnProperty(`giveaway_count`) && user.hasOwnProperty(`avoid_givenaway`) && user.avoid_givenaway === 1) {
-        pass = pass && game.giveaway_count === 0;
+    if (pass && user.hasOwnProperty(`avoid_givenaway`) && user.avoid_givenaway === 1) {
+        pass = pass && (game.giveaway_count || 0) === 0;
     }
 
-    if (pass && game.hasOwnProperty(`bundles_available`) && user.hasOwnProperty(`avoid_bundles`) && user.avoid_bundles === 1) {
-        pass = pass && game.bundles_available === 0;
+    if (pass && user.hasOwnProperty(`avoid_bundles`) && user.avoid_bundles === 1) {
+        pass = pass && (game.bundles_available || 0) === 0;
     }
 
     if (pass && game.hasOwnProperty(`user_reviews_positive`) && user.hasOwnProperty(`wants_rating`) && game.user_reviews_positive >= 0) {
@@ -1554,11 +1384,19 @@ function fixObjectTypes(obj) {
 
 function searchOffers(event) {
     const val = event.target.value.toLowerCase();
-    $(`#offers tr:not(:first)`).get().forEach((elem) => {
+    $(`#offers tr:has(abbr)`).get().forEach((elem) => {
         if ($(elem).text().toLowerCase().includes(val)) {
             $(elem).show();
         } else {
             $(elem).hide();
+        }
+    });
+
+    $(`#offers tr.commentPreview`).get().forEach((elem) => {
+        if ($(elem).prev().is(`:hidden`)) {
+            $(elem).hide();
+        } else {
+            $(elem).show();
         }
     });
 }
@@ -1572,10 +1410,10 @@ function messageOffers(event) {
         return;
     }
 
-    $(`#offers tr:visible`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
+    $(`#offers tr:visible:has(abbr)`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
         "offer_message": message,
         "offer_setup": 3
-    }, () => $(elem).css(`color`, `green`).find(`.textColor`).css(`color`, `green`)));
+    }, () => $(elem).find(`*`).css(`color`, `green`)));
 }
 
 function cancelOffers(event) {
@@ -1585,7 +1423,7 @@ function cancelOffers(event) {
         return;
     }
 
-    $(`#offers tr:visible`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
+    $(`#offers tr:visible:has(abbr)`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
         "offer_setup": 3,
         "cancel_offer": `☒ Cancel Offer`
     }, () => $(elem).remove()));
@@ -1608,7 +1446,7 @@ function extendExpiry(event) {
             const formdata = $(`#offer`, data).serializeObject();
             formdata.expire_days = expire_days;
             formdata.propose_offer = `Finish and Propose Offer`;
-            $.post(url, formdata, () => $(elem).css(`color`, `green`).find(`.textColor`).css(`color`, `green`));
+            $.post(url, formdata, () => $(elem).find(`*`).css(`color`, `green`));
         });
     });
 }
@@ -1687,6 +1525,11 @@ function shuffle(array) {
         array[randomIndex] = temporaryValue;
     }
     return array;
+}
+
+function inRange(num1, num2, numTest) {
+    const [min, max] = [num1, num2].sort((a, b) => a > b);
+    return numTest >= min && numTest <= max;
 }
 
 function versionToInteger(ver) {
@@ -1768,6 +1611,51 @@ const stylesheet = `
         margin-left: -20%;
         position: absolute;
         width: 45%;
+    }
+
+    .offerSlider .noUi-handle:after,
+    .offerSlider .noUi-handle:before {
+        display: none;
+    }
+
+    .offerSlider .noUi-tooltip {
+        display: none;
+        border: none;
+        border-radius: unset;
+        background: none;
+        color: inherit;
+        padding: unset;
+        margin-bottom: -6px;
+    }
+
+    .offerSlider:hover .noUi-tooltip {
+        display: block;
+    }
+
+    .offerSlider .noUi-connect {
+        background-color: #fff;
+    }
+
+    .offerSlider .noUi-handle {
+        border: 1px solid rgb(153, 17, 187);
+        box-shadow: none;
+        height: 20px;
+        outline: none;
+        width: 20px;
+    }
+
+    .offerSlider.noUi-target {
+        background-color: rgba(153, 17, 187, 0.1);
+        border: 1px solid rgb(153, 17, 187);
+        box-shadow: none;
+        float: right;
+        height: 10px;
+        margin: 7px;
+        width: 70%;
+    }
+
+    .offerSlider.on {
+        background-color: #fff;
     }
 `;
 
