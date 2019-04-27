@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.1
+// @version      1.1.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -147,7 +147,7 @@ function barterReady() {
     }
 
     // The creating offer page
-    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="button" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" class="checkall addTo pborder" onsubmit="void(0)"><input type="button" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" class="enableall addTo pborder" onsubmit="void(0)">`);
+    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="button" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" class="checkall addTo bborder" onsubmit="void(0)"><input type="button" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" class="enableall addTo oborder" onsubmit="void(0)">`);
     $(`[name=add_to_offer]`).val(`+ Add Selected`).css(`width`, `23.8%`).css(`margin-right`, `0.5%`);
 
     $(`.checkall`).click(checkAllTradables);
@@ -565,8 +565,8 @@ function setupAutomatedOffer() {
         <ul>
         ...to users who...
             <li> <input type="checkbox" name="offering_to" id="towishlist" value="wishlist" checked="true"> <label for="towishlist">...have them in their wishlist...</label></li>
-            <li> <input type="checkbox" name="offering_to" id="tounowned" value="unowned" checked="true"> <label for="tounowned">...do <strong>not</strong> have them in their libary...</label></li>
-            <!-- <li> <input type="checkbox" name="offering_to" id="tolibary" value="libary"> <label for="tolibary">...have them in their libary...</label></li> -->
+            <li> <input type="checkbox" name="offering_to" id="tounowned" value="unowned" checked="true"> <label for="tounowned">...do <strong>not</strong> have them in their library...</label></li>
+            <!-- <li> <input type="checkbox" name="offering_to" id="tolibrary" value="library"> <label for="tolibrary">...have them in their library...</label></li> -->
             <li> <input type="checkbox" name="offering_to" id="totradable" value="tradable"> <label for="totradable">...have them for trade...</label></li>
         </ul>
         <div style="margin: 2em 0; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);" class="offerDivide">
@@ -628,8 +628,8 @@ function setupAutomatedOffer() {
         <div style="width: 50%; float: right; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
             <ul>
                 <li> <input type="checkbox" name="want_from" id="wantwishlist" value="wishlist" checked="true"> <label for="wantwishlist">...have those tradables in your wishlist.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned" checked="true"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your libary.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wantlibary" value="libary"> <label for="wantlibary">...have those tradables in your libary.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned" checked="true"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your library.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wantlibrary" value="library"> <label for="wantlibrary">...have those tradables in your library.</label></li>
                 <li> <input type="checkbox" name="want_from" id="wanttradable" value="tradable"> <label for="wanttradable">...have those tradables in your tradables list.</label></li>
             </ul>
         </div>
@@ -676,7 +676,7 @@ function setupAutomatedOffer() {
         $(`.tradables input[type=checkbox]`).click(() => {
             const n = $(`.tradables input:checked`).length;
             $(`#from_ratio`).attr(`max`, n || 1);
-            $(`#from_ratio`).val(Math.min(n, parseInt($(`#from_ratio`).val())));
+            $(`#from_ratio`).val(Math.min(n || 1, parseInt($(`#from_ratio`).val())));
         });
         $(`#from_ratio`).change(() => $(`#from_ratio`).val(Math.min(parseInt($(`#from_ratio`).attr(`max`)), parseInt($(`#from_ratio`).val()))));
 
@@ -720,73 +720,70 @@ function setupAutomatedOffer() {
         $(`#massSendBtn`).click((event) => {
             event.preventDefault();
             sendAutomatedOffers();
-            return false;
         });
+
         $(`[name='add_to_offer_1[]']`).attr(`name`, `offering`);
         $(`#offerStatus+ div`).remove();
         $(`#offerStatus`).attr(`style`, `border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);`);
-
-        $(`.offerSlider`).get().forEach((slider) => {
-            const max = parseInt($(slider).data(`max`)) || 1000;
-            const digits = max.toString().split(``).length;
-            const prefix = $(slider).data(`prefix`) || ``;
-            const suffix = $(slider).data(`suffix`) || ``;
-            const isToggle = max === 1;
-
-            if (isToggle) {
-                $(slider).after(`<input type="hidden" value="true" name="${slider.id}">`);
-            } else {
-                $(slider).after(`<input type="hidden" value="0" name="min${slider.id}">`);
-                $(slider).after(`<input type="hidden" value="${max}" name="max${slider.id}">`);
-            }
-
-            const toggleTooltip = (val) => {
-                if (max === 1) {
-                    return val ? `Yes` : `No`;
-                }
-
-                return `${prefix}${Number(val).toFixed(0)}${suffix}`;
-            };
-
-            const range = {
-                "min": 0,
-                "max": max
-            };
-
-            let percentage = 0;
-            for (let i = 1; i <= digits - 1; i++) {
-                percentage += 100 / (digits - 1);
-                range[`${percentage}%`] = Math.pow(10, i);
-            }
-
-            // eslint-disable-next-line no-undef
-            noUiSlider.create(slider, {
-                "start": isToggle ? max : [0, max],
-                "connect": !isToggle,
-                "behaviour": isToggle ? `none` : `drag-tap`,
-                "tooltips": [{ "to": toggleTooltip }].concat(isToggle ? [] : [{ "to": toggleTooltip }]),
-                "step": 1,
-                "range": range
-            }).on(`update`, (values) => {
-                if (isToggle) {
-                    const value = parseInt(values[0]);
-                    $(`[name="${slider.id}"]`).val(Boolean(value));
-                    if (value) {
-                        $(slider).addClass(`on`);
-                    } else {
-                        $(slider).removeClass(`on`);
-                    }
-                } else {
-                    $(`[name="min${slider.id}"]`).val(Number(values[0]).toFixed(0));
-                    $(`[name="max${slider.id}"]`).val(Number(values[1]).toFixed(0));
-                }
-            });
-
-            if (isToggle) {
-                $(slider).find(`.noUi-connects`).click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
-            }
-        });
+        $(`.offerSlider`).get().forEach(addSlider);
     });
+}
+
+function addSlider(slider) {
+    const max = parseInt($(slider).data(`max`)) || 1000;
+    const digits = max.toString().split(``).length;
+    const prefix = $(slider).data(`prefix`) || ``;
+    const suffix = $(slider).data(`suffix`) || ``;
+    const isToggle = max === 1;
+    if (isToggle) {
+        $(slider).after(`<input type="hidden" value="true" name="${slider.id}">`);
+    }
+    else {
+        $(slider).after(`<input type="hidden" value="0" name="min${slider.id}">`);
+        $(slider).after(`<input type="hidden" value="${max}" name="max${slider.id}">`);
+    }
+    const toggleTooltip = (val) => {
+        if (max === 1) {
+            return val ? `Yes` : `No`;
+        }
+        return `${prefix}${Number(val).toFixed(0)}${suffix}`;
+    };
+    const range = {
+        "min": 0,
+        "max": max
+    };
+    let percentage = 0;
+    for (let i = 1; i <= digits - 1; i++) {
+        percentage += 100 / (digits - 1);
+        range[`${percentage}%`] = Math.pow(10, i);
+    }
+    // eslint-disable-next-line no-undef
+    noUiSlider.create(slider, {
+        "start": isToggle ? max : [0, max],
+        "connect": !isToggle,
+        "behaviour": isToggle ? `none` : `drag-tap`,
+        "tooltips": [{ "to": toggleTooltip }].concat(isToggle ? [] : [{ "to": toggleTooltip }]),
+        "step": 1,
+        "range": range
+    }).on(`update`, (values) => {
+        if (isToggle) {
+            const value = parseInt(values[0]);
+            $(`[name="${slider.id}"]`).val(Boolean(value));
+            if (value) {
+                $(slider).addClass(`on`);
+            }
+            else {
+                $(slider).removeClass(`on`);
+            }
+        }
+        else {
+            $(`[name="min${slider.id}"]`).val(Number(values[0]).toFixed(0));
+            $(`[name="max${slider.id}"]`).val(Number(values[1]).toFixed(0));
+        }
+    });
+    if (isToggle) {
+        $(slider).find(`.noUi-connects`).click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
+    }
 }
 
 function checkSettings(settings) {
@@ -835,8 +832,8 @@ function checkSettings(settings) {
         return;
     }
 
-    if (settings.offering.length > 30) {
-        alert(`Please select 30 or less of your tradable(s) that you want to offer.`);
+    if (settings.offering.length > 100) {
+        alert(`Please select 100 or less of your tradable(s) that you want to offer.`);
         return;
     }
 
@@ -883,7 +880,12 @@ function calculateStupidDailyLimit(offers) {
 
 async function sendAutomatedOffers(options) {
     const settings = checkSettings(options);
-    console.log(`settings`, settings);
+    const alertError = (err) => {
+        console.log(err);
+        alert(err.message || err.name);
+    };
+
+    console.log({ settings });
 
     if (!settings) {
         return;
@@ -903,10 +905,7 @@ async function sendAutomatedOffers(options) {
 
     if (settings.synclib) {
         logHTML(`Syncing your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with your <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam user data</a>...`);
-        await syncLibrary().catch((err) => {
-            console.log(err);
-            alert(err.message || err.name);
-        });
+        await syncLibrary().catch(alertError);
     }
 
     logHTML(`Getting list of users that opted out for automated offers..`);
@@ -979,9 +978,16 @@ async function sendAutomatedOffers(options) {
     for (const userid in allmatches) { // gonna filter out the matches that have no tradables that interest me
         const uid = parseInt(userid);
 
-        const groups = await getFilteredTradables(uid); // the user's tradables filtered according to my collections
-        const want_items = [].concat(...settings.want_from.map((group) => groups[group])); // array of item id's of tradables I (still) want from this user
+        const groups = await getFilteredTradables(uid).catch(alertError); // the user's tradables filtered according to my collections
+        if (!groups) {
+            delete allmatches[uid];
+            for (const key in mytradables) {
+                mytradables[key].matches.delete(uid);
+            }
+            continue;
+        }
 
+        const want_items = [].concat(...settings.want_from.map((group) => groups[group] || [])); // array of item id's of the group of tradables I (still) want from this user
         if (want_items.length === 0) { // if user has no tradables I'm interested in, delete match
             delete allmatches[uid];
             for (const key in mytradables) {
@@ -990,17 +996,24 @@ async function sendAutomatedOffers(options) {
             continue;
         }
 
-        const theirtradables = await getBarterTradables(uid);
-        const no_offers_items = Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369).map((tag) => tag.line_id) : [];
+        const theirtradables = await getBarterTradables(uid).catch(alertError);
+        if (!theirtradables) {
+            delete allmatches[uid];
+            for (const key in mytradables) {
+                mytradables[key].matches.delete(uid);
+            }
+            continue;
+        }
 
+        const no_offers_items = theirtradables.tags && Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369).map((tag) => tag.line_id) : [];
         for (const platformid in theirtradables.by_platform) {
             const tradables = theirtradables.by_platform[platformid];
-            Object.keys(tradables).forEach((line_id) => {
+            for (const line_id in tradables) {
                 const tradable = tradables[line_id];
-                if (passesMyPreferences(tradable, settings, want_items) && !no_offers_items.includes(tradable.line_id)) {
+                if (passesMyPreferences(tradable, settings, want_items, no_offers_items)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
-            });
+            }
         }
 
         if (allmatches[uid].want.size < parseInt(settings.to_ratio) || allmatches[uid].want.size === 0) {
@@ -1012,16 +1025,17 @@ async function sendAutomatedOffers(options) {
         }
     }
 
-    logHTML(`Found ${Object.keys(allmatches).length} matching traders!`);
+    const matchescount = Object.keys(allmatches).length;
+    logHTML(`Found ${matchescount} matching traders!`);
 
-    if (Object.keys(allmatches).length < settings.minlimit) {
+    if (matchescount < settings.minlimit) {
         logHTML(`Not enough matches found. Done!`);
         changeAutomatedOfferStatus(4);
         hideSpinner(`automatedoffers`);
         return;
     }
 
-    const max = Math.min(settings.maxlimit, Object.keys(allmatches).length);
+    const max = Math.min(settings.maxlimit, matchescount);
     logHTML(`Sending ${max} automated offers...`);
     changeAutomatedOfferStatus(3);
 
@@ -1052,14 +1066,13 @@ async function sendAutomatedOffers(options) {
 
             await delay(daylength); // wait an entire day, because barter thinks it's neccesary
 
-            offers = await getBarterOffers(parseInt(myuid, 16));
-
+            offers = await getBarterOffers(parseInt(myuid, 16)).catch(alertError);
             dailylimit = sent + calculateStupidDailyLimit(offers); // barter's stupid daily offer limit
         }
 
         const uid = parseInt(userid);
         const ato1 = shuffle(Object.keys(mytradables).filter((key) => mytradables[key].matches.has(uid))); // only add my offered tradables that the user actually wants
-        const ato2 = shuffle([...allmatches[uid].want]).splice(0, 30); // max 30 hardcoded: any more than 30 games will be blocked serverside
+        const ato2 = shuffle([...allmatches[uid].want]).splice(0, allmatches[uid].max_items_per_offer || 100);
 
         const offer = await sendBarterOffer({
             "to": uid,
@@ -1098,7 +1111,7 @@ function getBarterOffers(uid) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         delete json[0]; // metadata
@@ -1117,7 +1130,7 @@ function getBarterTradables(uid) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         res(json);
@@ -1135,7 +1148,7 @@ function getFilteredTradables(uid) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         res(json);
@@ -1153,7 +1166,7 @@ function getBarterItemInfo(itemid) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         res(json);
@@ -1171,7 +1184,7 @@ function getBarterAppSettings(appid) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         res(json);
@@ -1198,7 +1211,7 @@ function sendBarterOffer(options) {
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response.responseText });
+            rej({ "error": e, "data": response });
         }
 
         res(json);
@@ -1216,17 +1229,17 @@ function request(options) {
     }
 
     return new Promise((res, rej) => GM_xmlhttpRequest({
-        "timeout": 180000,
+        "timeout": 240000,
         ...options,
         "onload": res,
-        "onerror": rej,
-        "ontimeout": rej,
-        "onabort": rej
+        "onerror": (...params) => rej({ "reason": `error`, params }),
+        "ontimeout": (...params) => rej({ "reason": `timeout`, params }),
+        "onabort": (...params) => rej({ "reason": `abort`, params })
     }));
 }
 
-function passesMyPreferences(game, settings, want_items) {
-    let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id);
+function passesMyPreferences(game, settings, want_items, no_offers_items) {
+    let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
 
     if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
         pass = pass && game.extra > 0;
@@ -1261,7 +1274,7 @@ function passesMyPreferences(game, settings, want_items) {
     }
 
     if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
-        pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) * 100);
+        pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) / 100);
     }
 
     if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
