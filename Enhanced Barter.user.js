@@ -843,6 +843,7 @@ function checkSettings(settings) {
 function logHTML(log) {
     console.log(log);
     $(`#log`).append(`<p>${log}</p>`);
+    $(`#log`).get(0).scrollTop = $(`#log`).get(0).scrollHeight;
 }
 
 function changeAutomatedOfferStatus(i) {
