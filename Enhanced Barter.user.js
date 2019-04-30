@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.0
+// @version      1.1.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -228,7 +228,7 @@ function barterReady() {
 
     // The offer overview page
     if ($(`li:has([accesskey="o"])`).is(`.nav-sel`) && $(`.activity`).length > 0) {
-        $(`input.offer`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="button" style="float: right;">`);
+        $(`[name="offer_setup"]+`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="button" style="float: right;">`);
         $(`#automatedoffer`).parents(`form`).css(`width`, `100%`);
         $(`#automatedoffer`).click(setupAutomatedOffer);
         $(`.showMoreArea`).last().after(`<p>
@@ -577,11 +577,15 @@ function setupAutomatedOffer() {
         </p>
         <fieldset style="border-top: 1px solid rgb(153, 17, 187);">
             <div id="limit" data-max="10000" class="offerSlider"></div>
-            Offers (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. Note that barter has a daily limit.">?</a>)
+            Offer count (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. Note that barter has a daily limit.">?</a>)
         </fieldset>
         <fieldset>
             <div id="DLC" data-max="1" class="offerSlider"></div>
             Include DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC?">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="limited" data-max="1" class="offerSlider"></div>
+            Include Steam Limited (<a style="cursor: help; text-decoration: none;" title="Include Steam Limited? Steam Limited: no +1 for your library, no achievement showcase">?</a>)
         </fieldset>
         <fieldset>
             <div id="givenaway" data-max="1" class="offerSlider"></div>
@@ -637,33 +641,164 @@ function setupAutomatedOffer() {
             <ul>
                 <li><input type="checkbox" name="platform" id="steam" value="1" checked="true"><label for="steam">Steam</label></li>
                 <li><input type="checkbox" name="platform" id="steampkg" value="2"><label for="steampkg">Steam Package</label></li>
-                <li><input type="checkbox" name="platform" id="hb" value="3"><label for="hb">Humble Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="humblebundle" value="3"><label for="humblebundle">Humble Bundle</label></li>
                 <li><input type="checkbox" name="platform" id="gog" value="4"><label for="gog">GOG.com</label></li>
                 <li><input type="checkbox" name="platform" id="origin" value="5"><label for="origin">Origin</label></li>
                 <li><input type="checkbox" name="platform" id="desura" value="6"><label for="desura">Desura</label></li>
+                <li><input type="checkbox" name="platform" id="indiegala" value="7"><label for="indiegala">Indiegala</label></li>
+                <li><input type="checkbox" name="platform" id="fanatical" value="8"><label for="fanatical">Fanatical</label></li>
                 <li><input type="checkbox" name="platform" id="groupees" value="9"><label for="groupees">Groupees</label></li>
+                <li><input type="checkbox" name="platform" id="indieroyale" value="10"><label for="indieroyale">Indie Royale</label></li>
                 <li><input type="checkbox" name="platform" id="gamersgate" value="11"><label for="gamersgate">GamersGate</label></li>
-                <li><input type="checkbox" name="platform" id="hbstore" value="13"><label for="hbstore">Humble Store</label></li>
+                <li><input type="checkbox" name="platform" id="amazon" value="12"><label for="amazon">Amazon</label></li>
+                <li><input type="checkbox" name="platform" id="humblebundle" value="13"><label for="humblebundle">Humble Store</label></li>
                 <li><input type="checkbox" name="platform" id="uplay" value="14"><label for="uplay">Uplay</label></li>
-                <li><input type="checkbox" name="platform" id="n3ds" value="25"><label for="n3ds">Nintendo 3DS</label></li>
+                <li><input type="checkbox" name="platform" id="lazyguys" value="15"><label for="lazyguys">Lazy Guys Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="greenlight" value="16"><label for="greenlight">Green Light Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="dailyindie" value="17"><label for="dailyindie">DailyIndieGame</label></li>
+                <li><input type="checkbox" name="platform" id="flyingbundle" value="18"><label for="flyingbundle">Flying Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="steami" value="19"><label for="steami">Steam Item</label></li>
+                <li><input type="checkbox" name="platform" id="gmg" value="20"><label for="gmg">Green Man Gaming</label></li>
+                <li><input type="checkbox" name="platform" id="nuuvem" value="21"><label for="nuuvem">Nuuvem</label></li>
+                <li><input type="checkbox" name="platform" id="macgamestore" value="22"><label for="macgamestore">MacGameStore</label></li>
+                <li><input type="checkbox" name="platform" id="playinjector" value="23"><label for="playinjector">Playinjector</label></li>
+                <li><input type="checkbox" name="platform" id="igamestand" value="24"><label for="igamestand">IndieGameStand</label></li>
+                <li><input type="checkbox" name="platform" id="3ds" value="25"><label for="3ds">Nintendo 3DS</label></li>
                 <li><input type="checkbox" name="platform" id="wiiu" value="26"><label for="wiiu">WiiU</label></li>
+                <li><input type="checkbox" name="platform" id="coinplay" value="27"><label for="coinplay">Coinplay.io</label></li>
                 <li><input type="checkbox" name="platform" id="itchio" value="28"><label for="itchio">itch.io</label></li>
-                <li><input type="checkbox" name="platform" id="tellate" value="32"><label for="tellate">Telltale Games</label></li>
-                <li><input type="checkbox" name="platform" id="greenlight" value="35"><label for="greenlight">Steam Greenlight</label></li>
+                <li><input type="checkbox" name="platform" id="superduper" value="29"><label for="superduper">Super-Duper Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="onemore" value="30"><label for="onemore">one more bundle</label></li>
+                <li><input type="checkbox" name="platform" id="cubicbundle" value="31"><label for="cubicbundle">Cubic Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="telltale" value="32"><label for="telltale">Telltale Games</label></li>
+                <li><input type="checkbox" name="platform" id="hrk" value="33"><label for="hrk">HRK</label></li>
+                <li><input type="checkbox" name="platform" id="wingamestore" value="34"><label for="wingamestore">WinGameStore</label></li>
+                <li><input type="checkbox" name="platform" id="sgreenlight" value="35"><label for="sgreenlight">Steam Greenlight</label></li>
+                <li><input type="checkbox" name="platform" id="orlygift" value="36"><label for="orlygift">Orlygift</label></li>
                 <li><input type="checkbox" name="platform" id="squareenix" value="37"><label for="squareenix">Square Enix</label></li>
+                <li><input type="checkbox" name="platform" id="otakumaker" value="38"><label for="otakumaker">OtakuMaker</label></li>
+                <li><input type="checkbox" name="platform" id="bundlekings" value="39"><label for="bundlekings">Bundle Kings</label></li>
+                <li><input type="checkbox" name="platform" id="gamebundle" value="40"><label for="gamebundle">GameBundle</label></li>
+                <li><input type="checkbox" name="platform" id="chronogg" value="41"><label for="chronogg">Chrono.gg</label></li>
+                <li><input type="checkbox" name="platform" id="dlgamer" value="42"><label for="dlgamer">DLGamer</label></li>
+                <li><input type="checkbox" name="platform" id="gamesplanet" value="43"><label for="gamesplanet">Gamesplanet</label></li>
+                <li><input type="checkbox" name="platform" id="silagames" value="44"><label for="silagames">Sila Games</label></li>
+                <li><input type="checkbox" name="platform" id="bunchofkeys" value="45"><label for="bunchofkeys">Bunch of Keys</label></li>
+                <li><input type="checkbox" name="platform" id="g2a" value="46"><label for="g2a">G2A</label></li>
+                <li><input type="checkbox" name="platform" id="steamground" value="47"><label for="steamground">Steamground</label></li>
+                <li><input type="checkbox" name="platform" id="99cent" value="48"><label for="99cent">99 Cent Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="redacted" value="49"><label for="redacted">Redacted Network</label></li>
+                <li><input type="checkbox" name="platform" id="breadbox" value="50"><label for="breadbox">Bread Box Bundle</label></li>
                 <li><input type="checkbox" name="platform" id="ps4" value="51"><label for="ps4">PlayStation 4</label></li>
                 <li><input type="checkbox" name="platform" id="ps3" value="52"><label for="ps3">PlayStation 3</label></li>
-                <li><input type="checkbox" name="platform" id="x360" value="53"><label for="x360">Xbox 360</label></li>
+                <li><input type="checkbox" name="platform" id="xb360" value="53"><label for="xb360">Xbox 360</label></li>
                 <li><input type="checkbox" name="platform" id="xbone" value="54"><label for="xbone">Xbox One</label></li>
-                <li><input type="checkbox" name="platform" id="unknown" value="61"><label for="unknown">Unspecified Platform</label></li>
+                <li><input type="checkbox" name="platform" id="steamgifts" value="55"><label for="steamgifts">Steamgifts.com</label></li>
+                <li><input type="checkbox" name="platform" id="marvelous" value="56"><label for="marvelous">MarvelousCrate</label></li>
+                <li><input type="checkbox" name="platform" id="barter" value="57"><label for="barter">Barter.vg</label></li>
+                <li><input type="checkbox" name="platform" id="gogobundles" value="58"><label for="gogobundles">GoGoBundle</label></li>
+                <li><input type="checkbox" name="platform" id="cdkeys" value="59"><label for="cdkeys">CDKeys.com</label></li>
+                <li><input type="checkbox" name="platform" id="kinguin" value="60"><label for="kinguin">Kinguin</label></li>
+                <li><input type="checkbox" name="platform" id="unspecified2" value="61"><label for="unspecified2">Unspecified Platform</label></li>
+                <li><input type="checkbox" name="platform" id="otakubundle" value="62"><label for="otakubundle">Otaku Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="dogebundle" value="63"><label for="dogebundle">DogeBundle</label></li>
+                <li><input type="checkbox" name="platform" id="plati" value="64"><label for="plati">Plati</label></li>
+                <li><input type="checkbox" name="platform" id="streamtrades" value="65"><label for="streamtrades">Steamtrades.com</label></li>
+                <li><input type="checkbox" name="platform" id="epicgamesstore" value="66"><label for="epicgamesstore">Epic Games Store</label></li>
                 <li><input type="checkbox" name="platform" id="twitch" value="67"><label for="twitch">Twitch</label></li>
-                <li><input type="checkbox" name="platform" id="psvita" value="77"><label for="psvita">PSVita</label></li>
-                <li><input type="checkbox" name="platform" id="psn" value="78"><label for="psn">PSN</label></li>
-                <li><input type="checkbox" name="platform" id="bnet" value="80"><label for="bnet">battle.net</label></li>
+                <li><input type="checkbox" name="platform" id="indiedeals2" value="68"><label for="indiedeals2">IndieDeals.net</label></li>
+                <li><input type="checkbox" name="platform" id="tigb" value="69"><label for="tigb">The Indie Games Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="tiltify" value="70"><label for="tiltify">Tiltify</label></li>
+                <li><input type="checkbox" name="platform" id="tremorgames" value="71"><label for="tremorgames">Tremor Games</label></li>
+                <li><input type="checkbox" name="platform" id="grepublic" value="72"><label for="grepublic">Games Republic</label></li>
+                <li><input type="checkbox" name="platform" id="2game" value="73"><label for="2game">2game</label></li>
+                <li><input type="checkbox" name="platform" id="d2d" value="74"><label for="d2d">Direct2Drive</label></li>
+                <li><input type="checkbox" name="platform" id="dreamgate" value="75"><label for="dreamgate">Dreamgate</label></li>
+                <li><input type="checkbox" name="platform" id="newegg" value="76"><label for="newegg">Newegg</label></li>
+                <li><input type="checkbox" name="platform" id="ps3" value="77"><label for="ps3">PSVita</label></li>
+                <li><input type="checkbox" name="platform" id="ps4" value="78"><label for="ps4">PSN</label></li>
+                <li><input type="checkbox" name="platform" id="embloo" value="79"><label for="embloo">Embloo</label></li>
+                <li><input type="checkbox" name="platform" id="battlenet" value="80"><label for="battlenet">battle.net</label></li>
+                <li><input type="checkbox" name="platform" id="gamivo" value="81"><label for="gamivo">Gamivo</label></li>
+                <li><input type="checkbox" name="platform" id="getgames" value="82"><label for="getgames">Get Games Go</label></li>
+                <li><input type="checkbox" name="platform" id="g2play" value="83"><label for="g2play">G2play</label></li>
                 <li><input type="checkbox" name="platform" id="fangamer" value="84"><label for="fangamer">Fangamer</label></li>
-                <li><input type="checkbox" name="platform" id="ht" value="85"><label for="ht">Humble Trove</label></li>
-                <li><input type="checkbox" name="platform" id="rsc" value="112"><label for="rsc">Rockstar Social Club</label></li>
+                <li><input type="checkbox" name="platform" id="trove" value="85"><label for="trove">Humble Trove</label></li>
+                <li><input type="checkbox" name="platform" id="steam-tracker" value="86"><label for="steam-tracker">Steam-tracker</label></li>
+                <li><input type="checkbox" name="platform" id="blinkbundle" value="87"><label for="blinkbundle">Blink Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="gamesrage" value="88"><label for="gamesrage">Games Rage</label></li>
+                <li><input type="checkbox" name="platform" id="bbandits" value="89"><label for="bbandits">Bundle Bandits</label></li>
+                <li><input type="checkbox" name="platform" id="bcentral" value="90"><label for="bcentral">Bundle Central</label></li>
+                <li><input type="checkbox" name="platform" id="bdragon" value="91"><label for="bdragon">Bundle Dragon</label></li>
+                <li><input type="checkbox" name="platform" id="biab" value="92"><label for="biab">Bundle In A Box</label></li>
+                <li><input type="checkbox" name="platform" id="cultofmac" value="93"><label for="cultofmac">Cult of Mac</label></li>
+                <li><input type="checkbox" name="platform" id="eurobundle" value="94"><label for="eurobundle">Eurobundle</label></li>
+                <li><input type="checkbox" name="platform" id="gram" value="95"><label for="gram">gram.pl</label></li>
+                <li><input type="checkbox" name="platform" id="indieammo" value="96"><label for="indieammo">Indie Ammo Box</label></li>
+                <li><input type="checkbox" name="platform" id="iborg" value="97"><label for="iborg">IndieBundle</label></li>
+                <li><input type="checkbox" name="platform" id="kissmb" value="98"><label for="kissmb">KissMyBundles</label></li>
+                <li><input type="checkbox" name="platform" id="madorc" value="99"><label for="madorc">MadOrc</label></li>
+                <li><input type="checkbox" name="platform" id="paddle" value="100"><label for="paddle">Paddle</label></li>
+                <li><input type="checkbox" name="platform" id="paywuw" value="101"><label for="paywuw">PayWUW</label></li>
+                <li><input type="checkbox" name="platform" id="peonb" value="102"><label for="peonb">Peon Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="gameolith" value="103"><label for="gameolith">Gameolith</label></li>
+                <li><input type="checkbox" name="platform" id="selectnp" value="104"><label for="selectnp">Select n' Play</label></li>
+                <li><input type="checkbox" name="platform" id="shinyloot" value="105"><label for="shinyloot">ShinyLoot</label></li>
+                <li><input type="checkbox" name="platform" id="stacksocial" value="106"><label for="stacksocial">StackSocial</label></li>
+                <li><input type="checkbox" name="platform" id="universala" value="107"><label for="universala">Universala</label></li>
+                <li><input type="checkbox" name="platform" id="vodo" value="108"><label for="vodo">VODO</label></li>
+                <li><input type="checkbox" name="platform" id="cybundle" value="109"><label for="cybundle">CY Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="discord" value="110"><label for="discord">Discord</label></li>
+                <li><input type="checkbox" name="platform" id="lequestore" value="111"><label for="lequestore">lequestore</label></li>
+                <li><input type="checkbox" name="platform" id="rockstar" value="112"><label for="rockstar">Rockstar Social Club</label></li>
+                <li><input type="checkbox" name="platform" id="disc" value="113"><label for="disc">From boxed copy</label></li>
+                <li><input type="checkbox" name="platform" id="puppygames" value="114"><label for="puppygames">PuppyGames</label></li>
+                <li><input type="checkbox" name="platform" id="igpack" value="115"><label for="igpack">Indie-games pack</label></li>
+                <li><input type="checkbox" name="platform" id="supershock" value="116"><label for="supershock">Super Shock Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="charlies" value="117"><label for="charlies">Charlie's Games</label></li>
+                <li><input type="checkbox" name="platform" id="socks" value="118"><label for="socks">Buy Games Not Socks</label></li>
+                <li><input type="checkbox" name="platform" id="subsoap" value="119"><label for="subsoap">Subsoap</label></li>
+                <li><input type="checkbox" name="platform" id="bitcoin" value="120"><label for="bitcoin">Bitcoin Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="gamersgate" value="121"><label for="gamersgate">IndieFort</label></li>
+                <li><input type="checkbox" name="platform" id="voidu" value="122"><label for="voidu">Voidu</label></li>
+                <li><input type="checkbox" name="platform" id="gemly" value="123"><label for="gemly">gemly</label></li>
+                <li><input type="checkbox" name="platform" id="akens" value="124"><label for="akens">akens.ru</label></li>
+                <li><input type="checkbox" name="platform" id="farmkeys" value="125"><label for="farmkeys">FarmKEYS</label></li>
+                <li><input type="checkbox" name="platform" id="tkfg" value="126"><label for="tkfg">TKFG</label></li>
+                <li><input type="checkbox" name="platform" id="greenlighta" value="127"><label for="greenlighta">Greenlight Arcade</label></li>
+                <li><input type="checkbox" name="platform" id="h2o" value="128"><label for="h2o">H2O Bundle</label></li>
                 <li><input type="checkbox" name="platform" id="oculus" value="129"><label for="oculus">Oculus</label></li>
+                <li><input type="checkbox" name="platform" id="razer" value="130"><label for="razer">Razer</label></li>
+                <li><input type="checkbox" name="platform" id="alienware" value="131"><label for="alienware">Alienware</label></li>
+                <li><input type="checkbox" name="platform" id="ign" value="132"><label for="ign">IGN</label></li>
+                <li><input type="checkbox" name="platform" id="microsoft" value="133"><label for="microsoft">Microsoft Store</label></li>
+                <li><input type="checkbox" name="platform" id="alphabundle" value="134"><label for="alphabundle">Alpha Bundle</label></li>
+                <li><input type="checkbox" name="platform" id="opiumpulses" value="135"><label for="opiumpulses">Opium Pulses</label></li>
+                <li><input type="checkbox" name="platform" id="brightlocker" value="137"><label for="brightlocker">BrightLocker</label></li>
+                <li><input type="checkbox" name="platform" id="oyvey" value="138"><label for="oyvey">Oy Vey Keys</label></li>
+                <li><input type="checkbox" name="platform" id="stardock" value="139"><label for="stardock">Stardock</label></li>
+                <li><input type="checkbox" name="platform" id="lootcrate" value="140"><label for="lootcrate">Loot Crate</label></li>
+                <li><input type="checkbox" name="platform" id="allyouplay" value="141"><label for="allyouplay">Allyouplay</label></li>
+                <li><input type="checkbox" name="platform" id="bestbuy" value="142"><label for="bestbuy">Best Buy</label></li>
+                <li><input type="checkbox" name="platform" id="gameuk" value="143"><label for="gameuk">GAME UK</label></li>
+                <li><input type="checkbox" name="platform" id="gamebillet" value="144"><label for="gamebillet">Gamebillet</label></li>
+                <li><input type="checkbox" name="platform" id="gamestop" value="145"><label for="gamestop">GameStop</label></li>
+                <li><input type="checkbox" name="platform" id="xbone" value="146"><label for="xbone">Xbox Live</label></li>
+                <li><input type="checkbox" name="platform" id="arenanet" value="147"><label for="arenanet">ArenaNet</label></li>
+                <li><input type="checkbox" name="platform" id="bethesda" value="148"><label for="bethesda">Bethesda.net</label></li>
+                <li><input type="checkbox" name="platform" id="gamehag" value="149"><label for="gamehag">Gamehag</label></li>
+                <li><input type="checkbox" name="platform" id="kartridge" value="150"><label for="kartridge">Kartridge</label></li>
+                <li><input type="checkbox" name="platform" id="lootboy" value="151"><label for="lootboy">LootBoy</label></li>
+                <li><input type="checkbox" name="platform" id="dlhnet" value="152"><label for="dlhnet">Dlh.net</label></li>
+                <li><input type="checkbox" name="platform" id="giveawaysu" value="153"><label for="giveawaysu">GiveAway.su</label></li>
+                <li><input type="checkbox" name="platform" id="gleam" value="154"><label for="gleam">Gleam</label></li>
+                <li><input type="checkbox" name="platform" id="gamehunt" value="155"><label for="gamehunt">GAMEHUNT</label></li>
+                <li><input type="checkbox" name="platform" id="grabfreegame" value="156"><label for="grabfreegame">GrabFreeGame</label></li>
+                <li><input type="checkbox" name="platform" id="wgn" value="157"><label for="wgn">Who's Gaming Now?!</label></li>
+                <li><input type="checkbox" name="platform" id="keyjoker" value="158"><label for="keyjoker">KeyJoker</label></li>
+                <li><input type="checkbox" name="platform" id="devsource" value="159"><label for="devsource">From Dev / Pub</label></li>
+                <li><input type="checkbox" name="platform" id="blank" value="160"><label for="blank">WeGame X</label></li>
+                <li><input type="checkbox" name="platform" id="blank" value="161"><label for="blank">Indie Face Kick</label></li>            
             </ul>
         </div>`);
 
@@ -761,7 +896,7 @@ function addSlider(slider) {
     noUiSlider.create(slider, {
         "start": isToggle ? max : [0, max],
         "connect": !isToggle,
-        "behaviour": isToggle ? `none` : `drag-tap`,
+        "behaviour": isToggle ? `none` : `tap`,
         "tooltips": [{ "to": toggleTooltip }].concat(isToggle ? [] : [{ "to": toggleTooltip }]),
         "step": 1,
         "range": range
@@ -1007,11 +1142,12 @@ async function sendAutomatedOffers(options) {
         }
 
         const no_offers_items = theirtradables.tags && Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369).map((tag) => tag.line_id) : [];
+        const limited_items = theirtradables.steam_limited;
         for (const platformid in theirtradables.by_platform) {
             const tradables = theirtradables.by_platform[platformid];
             for (const line_id in tradables) {
                 const tradable = tradables[line_id];
-                if (passesMyPreferences(tradable, settings, want_items, no_offers_items)) {
+                if (passesMyPreferences(tradable, settings, want_items, no_offers_items, limited_items)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
             }
@@ -1239,7 +1375,7 @@ function request(options) {
     }));
 }
 
-function passesMyPreferences(game, settings, want_items, no_offers_items) {
+function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
 
     if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
@@ -1248,6 +1384,10 @@ function passesMyPreferences(game, settings, want_items, no_offers_items) {
 
     if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`DLC`) && !settings.DLC) {
         pass = pass && game.item_type.toLowerCase() !== `dlc`;
+    }
+
+    if (pass && settings.hasOwnProperty(`limited`) && !settings.limited) {
+        pass = pass && !limited_items.includes(game.item_id);
     }
 
     if (pass && settings.hasOwnProperty(`givenaway`) && !settings.givenaway) {
