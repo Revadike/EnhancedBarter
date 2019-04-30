@@ -10,6 +10,9 @@ Enhanced Barter Userscript
 3. Enjoy!
 
 # Change Log
+ * *Later versions*
+      * [Releases](https://github.com/Revadike/EnhancedBarter/releases)
+
  * *Version 1.0.0*
       * Improved automated offers significantly
       * Improved ajaxify
