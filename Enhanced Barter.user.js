@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.2
+// @version      1.1.3
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -455,7 +455,7 @@ async function syncLibrary(callback) {
     }
 
     return new Promise(async(res, rej) => {
-        await request({
+        request({
             "url": `https://barter.vg/u/${myuid}/l/`,
             "method": `POST`,
             "headers": {
@@ -464,8 +464,9 @@ async function syncLibrary(callback) {
             "data": $.param({
                 "sync_list": `↻ Sync List`,
                 "type": 1
-            })
-        }).catch(rej);
+            }),
+            "onload": () => true
+        });
 
         const response = await request({
             "method": `GET`,
