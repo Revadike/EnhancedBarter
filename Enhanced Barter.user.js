@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.1
+// @version      1.1.2
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -60,6 +60,7 @@ function initBarter() {
     });
 
     unsafeWindow.$ = $;
+    unsafeWindow.syncLibrary = syncLibrary;
     $(document).ready(barterReady);
 }
 
@@ -76,6 +77,13 @@ function barterReady() {
             <span>&#129302;&#xFE0E;</span>${GM_info.script.name}
         </a>
     </li>`);
+
+    $(`.sortBy`).after(`<div id="filtercontainer">
+        <span class="activityIcon normal gray">¶</span> Filter by 
+        <input id="filterBy" type="text" placeholder="Search in displayed rows..." style="width: 530px;">
+    </div>`);
+    $(`#filtercontainer`).attr(`class`, $(`.sortBy`).attr(`class`));
+    $(`#filterBy`).on(`change keyup paste`, filterRows);
 
     streps = JSON.parse(localStorage.stReps || `{}`);
     $(`a:has(>[alt="Steam Trades icon"])`).get().forEach(addSteamTradesRep);
@@ -433,11 +441,10 @@ function finalizeOffer(event) {
     const msg = `＋REP ${name} is an amazing trader, recommended! We successfully completed this trade: ${url}. Thanks a lot for the trade!`;
 
     $(event.target).val(`Completing trade, sending feedback and syncing library...`).prop(`disabled`, true);
-    $.post(url, form.serializeObject());
     showSpinner(`feedback`);
 
     setPostTradeClipboard(url);
-    postSteamTradesComment(msg, steamid, () => syncLibrary(() => location.href = url));
+    $.post(url, form.serializeObject(), () => postSteamTradesComment(msg, steamid, () => syncLibrary(() => location.href = url)));
 }
 
 async function syncLibrary(callback) {
@@ -1074,7 +1081,7 @@ async function sendAutomatedOffers(options) {
 
                 const uid = parseInt(userid);
                 const user = gameinfo.users[group][userid];
-                if (passesTheirPreferences(gameinfo, user, optins, group, settings.offering.length, settings.expire_days)) {
+                if (passesTheirPreferences(gameinfo, user, optins, group, settings.offering.length)) {
                     mytradables[key].matches.add(uid);
                     allmatches[uid] = user;
                     allmatches[uid].want = new Set();
@@ -1215,7 +1222,7 @@ async function sendAutomatedOffers(options) {
             "to": uid,
             "from_and_or": settings.from_ratio === ato1.length ? 0 : settings.from_ratio,
             "to_and_or": settings.to_ratio,
-            "expire": settings.expire_days,
+            "expire": Math.max(allmatches[uid].expire_min_from || 1, settings.expire_days),
             "counter_preference": settings.counter_preference,
             "add_to_offer_from[]": ato1,
             "add_to_offer_to[]": ato2,
@@ -1433,7 +1440,7 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     return pass;
 }
 
-function passesTheirPreferences(game, user, optins, group, offeringcount, expiredays) {
+function passesTheirPreferences(game, user, optins, group, offeringcount) {
     let pass = true;
 
     if (pass && user.hasOwnProperty(`steam_id64_string`) && optins.hasOwnProperty(user.steam_id64_string)) {
@@ -1510,10 +1517,6 @@ function passesTheirPreferences(game, user, optins, group, offeringcount, expire
         pass = pass && game.linux === 1;
     }
 
-    if (pass && user.hasOwnProperty(`expire_min_from`)) {
-        pass = pass && expiredays >= user.expire_min_from;
-    }
-
     console.log(user.user_id, pass);
     return pass;
 }
@@ -1534,6 +1537,17 @@ function fixObjectTypes(obj) {
         }
     }
     return obj;
+}
+
+function filterRows(event) {
+    const val = event.target.value.toLowerCase();
+    $(`tbody tr:not(.platform)`).get().forEach((elem) => {
+        if ($(elem).text().toLowerCase().includes(val)) {
+            $(elem).show();
+        } else {
+            $(elem).hide();
+        }
+    });
 }
 
 function searchOffers(event) {
@@ -1606,6 +1620,8 @@ function extendExpiry(event) {
 }
 
 function ajaxify() {
+    return; // disabled for now
+    // eslint-disable-next-line no-unreachable
     $(`form:not([target='_blank'], [onsubmit])`).submit(formSubmitted);
     $(`button[name], [type=submit]:not([target='_blank'], [onsubmit])`).click(submitClicked);
 }
