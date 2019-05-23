@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.2
+// @version      1.1.3
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -455,7 +455,7 @@ async function syncLibrary(callback) {
     }
 
     return new Promise(async(res, rej) => {
-        await request({
+        request({
             "url": `https://barter.vg/u/${myuid}/l/`,
             "method": `POST`,
             "headers": {
@@ -464,8 +464,9 @@ async function syncLibrary(callback) {
             "data": $.param({
                 "sync_list": `↻ Sync List`,
                 "type": 1
-            })
-        }).catch(rej);
+            }),
+            "onload": () => true
+        });
 
         const response = await request({
             "method": `GET`,
@@ -587,16 +588,16 @@ function setupAutomatedOffer() {
             Offer count (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. Note that barter has a daily limit.">?</a>)
         </fieldset>
         <fieldset>
-            <div id="DLC" data-max="1" class="offerSlider"></div>
-            Include DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC?">?</a>)
+            <div id="DLC" data-max="1" data-suffix="%" class="offerSlider"></div>
+            DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC? There are 3 options: 0%-0% means no DLC, 0%-100% means allow DLC (don't care) and 100%-100% means DLC only.">?</a>)
         </fieldset>
         <fieldset>
-            <div id="limited" data-max="1" class="offerSlider"></div>
-            Include Steam Limited (<a style="cursor: help; text-decoration: none;" title="Include Steam Limited? Steam Limited: no +1 for your library, no achievement showcase">?</a>)
+            <div id="limited" data-max="1" data-suffix="%" class="offerSlider"></div>
+            Steam Limited (<a style="cursor: help; text-decoration: none;" title="Include Steam Limited? Steam Limited: no +1 for your library, no achievement showcase. There are 3 options: 0%-0% means no Steam Limited, 0%-100% means allow Steam Limited (don't care) and 100%-100% means Steam Limited only.">?</a>)
         </fieldset>
         <fieldset>
-            <div id="givenaway" data-max="1" class="offerSlider"></div>
-            Include given away (<a style="cursor: help; text-decoration: none;" title="Include games that are free or have been given away before?">?</a>)
+            <div id="givenaway" data-max="1" data-suffix="%" class="offerSlider"></div>
+            Given away (<a style="cursor: help; text-decoration: none;" title="Include games that are free or have been given away before?There are 3 options: 0%-0% means no given away, 0%-100% means allow given away (don't care) and 100%-100% means given away only.">?</a>)
         </fieldset>
         <fieldset>
             <div id="bundles" data-max="100" class="offerSlider"></div>
@@ -877,19 +878,26 @@ function addSlider(slider) {
     const prefix = $(slider).data(`prefix`) || ``;
     const suffix = $(slider).data(`suffix`) || ``;
     const isToggle = max === 1;
-    if (isToggle) {
+    const isPercent = suffix === `%`;
+    if (isToggle && !isPercent) {
         $(slider).after(`<input type="hidden" value="true" name="${slider.id}">`);
-    }
-    else {
+    } else {
         $(slider).after(`<input type="hidden" value="0" name="min${slider.id}">`);
         $(slider).after(`<input type="hidden" value="${max}" name="max${slider.id}">`);
     }
+
     const toggleTooltip = (val) => {
         if (max === 1) {
-            return val ? `Yes` : `No`;
+            if (isPercent) {
+                return val ? `100%` : `0%`;
+            } else {
+                return val ? `Yes` : `No`;
+            }
         }
+
         return `${prefix}${Number(val).toFixed(0)}${suffix}`;
     };
+
     const range = {
         "min": 0,
         "max": max
@@ -901,29 +909,29 @@ function addSlider(slider) {
     }
     // eslint-disable-next-line no-undef
     noUiSlider.create(slider, {
-        "start": isToggle ? max : [0, max],
-        "connect": !isToggle,
-        "behaviour": isToggle ? `none` : `tap`,
-        "tooltips": [{ "to": toggleTooltip }].concat(isToggle ? [] : [{ "to": toggleTooltip }]),
+        "start": isToggle && !isPercent ? max : [0, max],
+        "connect": !isToggle || isPercent,
+        "behaviour": isToggle && !isPercent ? `none` : `tap`,
+        "tooltips": [{ "to": toggleTooltip }].concat(isToggle && !isPercent ? [] : [{ "to": toggleTooltip }]),
         "step": 1,
         "range": range
     }).on(`update`, (values) => {
-        if (isToggle) {
+        if (isToggle && !isPercent) {
             const value = parseInt(values[0]);
             $(`[name="${slider.id}"]`).val(Boolean(value));
+
             if (value) {
                 $(slider).addClass(`on`);
-            }
-            else {
+            } else {
                 $(slider).removeClass(`on`);
             }
-        }
-        else {
+        } else {
             $(`[name="min${slider.id}"]`).val(Number(values[0]).toFixed(0));
             $(`[name="max${slider.id}"]`).val(Number(values[1]).toFixed(0));
         }
     });
-    if (isToggle) {
+
+    if (isToggle && !isPercent) {
         $(slider).find(`.noUi-connects`).click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
     }
 }
@@ -1058,8 +1066,28 @@ async function sendAutomatedOffers(options) {
     logHTML(`Getting info about the tradables you are offering...`);
     const allmatches = {};
     const mytradables = {};
+    const { tags, "user": { region } } = await getBarterTradables(parseInt(myuid, 16));
+    const tagregions = {
+        "26": region,
+        // "27": `RU`,
+        "28": 1,
+        "29": 2,
+        "30": 3,
+        "31": 4,
+        "34": 6,
+        "35": 5,
+        "346": region
+        // "364": `PL`,
+        // "376": `ROW`,
+        // "387": `DE`,
+        // "398": `IN`,
+        // "479": `CN`
+    };
+
     for (const i of settings.offering) {
-        mytradables[i] = await getBarterItemInfo(i.split(`,`)[0]);
+        const key = i.split(`,`);
+        mytradables[i] = await getBarterItemInfo(key[0]);
+        mytradables[i].regions = Object.values(tags[key[1]] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString())).map((tag) => tagregions[tag.tag_id]);
     }
 
     console.log(`mytradables`, mytradables);
@@ -1107,6 +1135,11 @@ async function sendAutomatedOffers(options) {
         }
     }
 
+    delete allmatches[parseInt(myuid, 16)];
+    for (const k in mytradables) {
+        mytradables[k].matches.delete(parseInt(myuid, 16));
+    }
+
     const matchedcount = Object.keys(allmatches).length;
     logHTML(`Found ${matchedcount} matching traders!`);
     console.log(`allmatches`, allmatches);
@@ -1150,11 +1183,13 @@ async function sendAutomatedOffers(options) {
 
         const no_offers_items = theirtradables.tags && Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369).map((tag) => tag.line_id) : [];
         const limited_items = theirtradables.steam_limited;
+
         for (const platformid in theirtradables.by_platform) {
             const tradables = theirtradables.by_platform[platformid];
             for (const line_id in tradables) {
                 const tradable = tradables[line_id];
-                if (passesMyPreferences(tradable, settings, want_items, no_offers_items, limited_items)) {
+                tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString())).map((tag) => tagregions[tag.tag_id]);
+                if (passesMyPreferences(tradable, settings, want_items, no_offers_items, limited_items, region)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
             }
@@ -1221,7 +1256,7 @@ async function sendAutomatedOffers(options) {
         const offer = await sendBarterOffer({
             "to": uid,
             "from_and_or": settings.from_ratio === ato1.length ? 0 : settings.from_ratio,
-            "to_and_or": settings.to_ratio,
+            "to_and_or": settings.to_ratio === ato2.length ? 0 : settings.to_ratio,
             "expire": Math.max(allmatches[uid].expire_min_from || 1, settings.expire_days),
             "counter_preference": settings.counter_preference,
             "add_to_offer_from[]": ato1,
@@ -1382,23 +1417,42 @@ function request(options) {
     }));
 }
 
-function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items) {
+function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
+
+    if (pass && myregion && game.regions && game.regions.length > 0) {
+        pass = pass && game.regions.includes(myregion); // their tradable region lock has my region
+    }
 
     if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
         pass = pass && game.extra > 0;
     }
 
-    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`DLC`) && !settings.DLC) {
-        pass = pass && game.item_type.toLowerCase() !== `dlc`;
+    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`minDLC`) && settings.hasOwnProperty(`maxDLC`)) {
+        if (settings.minDLC === 0 && settings.maxDLC === 0) {
+            pass = pass && game.item_type.toLowerCase() !== `dlc`;
+        }
+        if (settings.minDLC === 1 && settings.maxDLC === 1) {
+            pass = pass && game.item_type.toLowerCase() === `dlc`;
+        }
     }
 
-    if (pass && settings.hasOwnProperty(`limited`) && !settings.limited) {
-        pass = pass && !limited_items.includes(game.item_id);
+    if (pass && settings.hasOwnProperty(`minlimited`) && settings.hasOwnProperty(`maxlimited`)) {
+        if (settings.minlimited === 0 && settings.maxlimited === 0) {
+            pass = pass && !limited_items.includes(game.item_id);
+        }
+        if (settings.minlimited === 1 && settings.maxlimited === 1) {
+            pass = pass && limited_items.includes(game.item_id);
+        }
     }
 
-    if (pass && settings.hasOwnProperty(`givenaway`) && !settings.givenaway) {
-        pass = pass && (game.givenaway || 0) === 0;
+    if (pass && settings.hasOwnProperty(`mingivenaway`) && settings.hasOwnProperty(`maxgivenaway`)) {
+        if (settings.mingivenaway === 0 && settings.maxgivenaway === 0) {
+            pass = pass && (game.givenaway || 0) === 0;
+        }
+        if (settings.mingivenaway === 1 && settings.maxgivenaway === 1) {
+            pass = pass && (game.givenaway || 0) !== 0;
+        }
     }
 
     if (pass && settings.hasOwnProperty(`minbundles`) && settings.hasOwnProperty(`maxbundles`)) {
@@ -1440,8 +1494,8 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     return pass;
 }
 
-function passesTheirPreferences(game, user, optins, group, offeringcount) {
-    let pass = true;
+function passesTheirPreferences(game, user, optins, group, offeringcount) { // game = my tradable
+    let pass = user.region && game.regions && game.regions.length > 0 ? game.regions.includes(user.region) : true;
 
     if (pass && user.hasOwnProperty(`steam_id64_string`) && optins.hasOwnProperty(user.steam_id64_string)) {
         pass = pass && optins[user.steam_id64_string];
