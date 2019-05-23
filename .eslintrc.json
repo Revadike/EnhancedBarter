@@ -51,6 +51,10 @@
         "function-paren-newline": ["error", "never"],
         "handle-callback-err": "error",
         "implicit-arrow-linebreak": ["error", "beside"],
+        "keyword-spacing": ["error", {
+            "before": true,
+            "after": true
+        }],
         "max-statements-per-line": ["error", {"max": 1}],
         "multiline-ternary": ["error", "never"],
         "no-console": "off",
