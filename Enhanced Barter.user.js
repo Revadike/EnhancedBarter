@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.1.3
+// @version      1.2.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -559,6 +559,20 @@ function setupAutomatedOffer() {
         $(`#main h2`).html(`&#x1F916;&#xFE0E;✉ Automated Offers`);
         $(`#offerHeaderTo`).html(`To <strong>Qualified Users</strong> (select options below)`);
         $(`#offerHeaderTo`).parent().next().remove();
+        $(`#offerHeaderTo`).parent().before(`<tr>
+            <td class="gray">
+                <span>Via</span>
+            </td>
+            <td colspan="6" class="gray">
+                <a href="https://steamcommunity.com/groups/bartervg/discussions/6/1470841715930902039/">
+                    <span title="version ${GM_info.script.version}">${GM_info.script.name}</span>
+                </a>
+                <a href="https://github.com/Royalgamer06/EnhancedBarter/">
+                    <img src="https://bartervg.com/imgs/ico/github.png" alt="GitHub icon" title="GitHub" class="icon">
+                </a>
+                <span>(not associated with Barter.vg)</span>
+            </td>
+        </tr>`);
         $(`#offer`).replaceWith(`<form id=offer>${$(`#offer`).html()}</form>`);
         $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="button" onclick="location.reload()">`);
         $(`.tradables:nth-child(3) legend`).html(`${$(`.tradables:nth-child(3) legend`).html().replace(`<strong class="midsized offer">1</strong> of `, `<input min="1" id="from_ratio" name="from_ratio" type="number" value="1" style="width: 40px;"> of `)}...`);
@@ -573,7 +587,7 @@ function setupAutomatedOffer() {
         <ul>
         ...to users who...
             <li> <input type="checkbox" name="offering_to" id="towishlist" value="wishlist" checked="true"> <label for="towishlist">...have them in their wishlist...</label></li>
-            <li> <input type="checkbox" name="offering_to" id="tounowned" value="unowned" checked="true"> <label for="tounowned">...do <strong>not</strong> have them in their library...</label></li>
+            <li> <input type="checkbox" name="offering_to" id="tounowned" value="unowned"> <label for="tounowned">...do <strong>not</strong> have them in their library...</label></li>
             <!-- <li> <input type="checkbox" name="offering_to" id="tolibrary" value="library"> <label for="tolibrary">...have them in their library...</label></li> -->
             <li> <input type="checkbox" name="offering_to" id="totradable" value="tradable"> <label for="totradable">...have them for trade...</label></li>
         </ul>
@@ -581,66 +595,96 @@ function setupAutomatedOffer() {
             <strong class="midsized">⇅</strong> ...in exchange for...
         </div>
         <p>
-            ... <input min="1" id="to_ratio" name="to_ratio" type="number" value="1" style="width: 40px;"> of their tradables meeting these requirements...
+            ... <input min="1" id="to_ratio" name="to_ratio" type="number" value="1" style="width: 40px;"> of their tradables of type(s)...
         </p>
+        <p>
+            <input type="checkbox" name="type" id="game" value="game" checked="true"> <label for="game">Game</label>
+            <input type="checkbox" name="type" id="dlc" value="dlc"> <label for="dlc">DLC</label>
+            <input type="checkbox" name="type" id="application" value="application"> <label for="application">Application</label>
+            <input type="checkbox" name="type" id="tool" value="tool"> <label for="tool">Tool</label>
+            <input type="checkbox" name="type" id="demo" value="demo"> <label for="demo">Demo</label>
+            <input type="checkbox" name="type" id="mod" value="mod"> <label for="mod">Mod</label>
+            <input type="checkbox" name="type" id="media" value="media"> <label for="media">Media</label>
+            <input type="checkbox" name="type" id="movie" value="movie"> <label for="movie">Movie</label>
+            <input type="checkbox" name="type" id="video" value="video"> <label for="video">Video</label>
+            <input type="checkbox" name="type" id="episode" value="episode"> <label for="episode">Episode</label>
+            <input type="checkbox" name="type" id="series" value="series"> <label for="series">Series</label>
+            <input type="checkbox" name="type" id="guide" value="guide"> <label for="guide">Guide</label>
+            <input type="checkbox" name="type" id="config" value="config"> <label for="config">Config</label>
+            <input type="checkbox" name="type" id="storeonly" value="storeonly"> <label for="storeonly">Storefront Only</label>
+            <input type="checkbox" name="type" id="advertising" value="advertising"> <label for="advertising">Advertising</label>
+            <input type="checkbox" name="type" id="hardware" value="hardware"> <label for="hardware">Hardware</label>
+            <input type="checkbox" name="type" id="unknown" value="unknown"> <label for="unknown">Unknown</label>
+            <input type="checkbox" name="type" id="unset" value="unset"> <label for="unset">Unset</label>
+        </p>
+        <p>
+            ...meeting these requirements...
+        </p>
+        <fieldset>
+            <small>TIP: Hover over the (?) with your mouse cursor for a better description and explanation of the requirement.</small>
+        </fieldset>
         <fieldset style="border-top: 1px solid rgb(153, 17, 187);">
             <div id="limit" data-max="10000" class="offerSlider"></div>
-            Offer count (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. Note that barter has a daily limit.">?</a>)
+            Offer count (<a style="cursor: help; text-decoration: none;" title="The number range of offers you want to send. \nIf you only have a limited stock of your selected tradable(s), I'd recommend limiting your offers to avoid getting more accepted offers than you can fulfill. \nNote that barter has a daily limit for offers. Please complain to barter.vg about this.">?</a>)
         </fieldset>
-        <fieldset>
+        <!-- <fieldset>
             <div id="DLC" data-max="1" data-suffix="%" class="offerSlider"></div>
-            DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC? There are 3 options: 0%-0% means no DLC, 0%-100% means allow DLC (don't care) and 100%-100% means DLC only.">?</a>)
-        </fieldset>
+            DLC (<a style="cursor: help; text-decoration: none;" title="Include DLC? \nThere are 3 options: 0%-0% means no DLC, 0%-100% means allow DLC (don't care) and 100%-100% means DLC only.">?</a>)
+        </fieldset> -->
         <fieldset>
             <div id="limited" data-max="1" data-suffix="%" class="offerSlider"></div>
-            Steam Limited (<a style="cursor: help; text-decoration: none;" title="Include Steam Limited? Steam Limited: no +1 for your library, no achievement showcase. There are 3 options: 0%-0% means no Steam Limited, 0%-100% means allow Steam Limited (don't care) and 100%-100% means Steam Limited only.">?</a>)
+            Steam Limited (<a style="cursor: help; text-decoration: none;" title="Include Steam Limited? \nSteam Limited: no +1 for your library, no achievement showcase. \nThere are 3 options: 0%-0% means no Steam Limited, 0%-100% means allow Steam Limited (don't care) and 100%-100% means Steam Limited only.">?</a>)
         </fieldset>
         <fieldset>
             <div id="givenaway" data-max="1" data-suffix="%" class="offerSlider"></div>
-            Given away (<a style="cursor: help; text-decoration: none;" title="Include games that are free or have been given away before?There are 3 options: 0%-0% means no given away, 0%-100% means allow given away (don't care) and 100%-100% means given away only.">?</a>)
+            Given away (<a style="cursor: help; text-decoration: none;" title="Include games that are free or have been given away before?\nThere are 3 options: 0%-0% means no given away, 0%-100% means allow given away (don't care) and 100%-100% means given away only.">?</a>)
         </fieldset>
         <fieldset>
             <div id="bundles" data-max="100" class="offerSlider"></div>
-            Bundles count (<a style="cursor: help; text-decoration: none;" title="The number range of the game bundle count. Choose range 0-0 to only want never bundled games. Choose range 1-max to avoid never-bundled games.">?</a>)
+            Bundles count (<a style="cursor: help; text-decoration: none;" title="The range of the number of times the game has been bundled. \nChoose range 0-0 to only want never bundled games. \nChoose range 1-max to avoid never-bundled games.">?</a>)
         </fieldset>
         <fieldset>
             <div id="cards" data-max="100" class="offerSlider"></div>
-            Cards count (<a style="cursor: help; text-decoration: none;" title="The number range of the game card count. Choose range 0-0 to only want games with no cards.">?</a>)
+            Cards count (<a style="cursor: help; text-decoration: none;" title="The range of the how many Steam Trading Cards a game must have. \nChoose range 0-0 to only want games with no cards. \nChoose range 1-max to only want games with cards (any amount).">?</a>)
         </fieldset>
         <fieldset>
             <div id="achievements" data-max="1000000" class="offerSlider"></div>
-            Achievements count (<a style="cursor: help; text-decoration: none;" title="The number range of the achievement count of a tradable. Choose range 0-0 to only want games with no achievements.">?</a>)
+            Achievements count (<a style="cursor: help; text-decoration: none;" title="The range of how many achievements a game must have. \nChoose range 0-0 to only want games with no achievements. \nChoose range 1-max if you only want games with achievements (any amount).">?</a>)
         </fieldset>
         <fieldset>
             <div id="reviews" data-max="1000000" class="offerSlider"></div>
-            Review count (<a style="cursor: help; text-decoration: none;" title="The number range of the game review count. Choose range 0-0 to only want games with no reviews.">?</a>)
+            Review count (<a style="cursor: help; text-decoration: none;" title="I recommend leaving this one on default (0-max). \nThe range of how many reviews a game must have. \nChoose range 0-0 to only want games with no reviews. \nChoose range 1-max if you only want games with reviews (any amount).">?</a>)
         </fieldset>
         <fieldset>
             <div id="scores" data-max="100" data-suffix="%" class="offerSlider"></div>
-            Review score (<a style="cursor: help; text-decoration: none;" title="The percentage range of the game review score">?</a>)
+            Review score (<a style="cursor: help; text-decoration: none;" title="The percentage range of the game review score. \nThe default range (0%-100%) allows games with any review score.">?</a>)
         </fieldset>
         <fieldset>
             <div id="price" data-max="10000" data-prefix="$" class="offerSlider"></div>
-            Price (<a style="cursor: help; text-decoration: none;" title="The price range of the game">?</a>)
+            Price (<a style="cursor: help; text-decoration: none;" title="The price range of the game. \nThe default range (0$-max$) allows games with any price amount. \nI'd recommend adjusting this range to roughly match your selected tradable(s).">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="year" data-min="1950" data-max="2050" class="offerSlider"></div>
+            Release year (<a style="cursor: help; text-decoration: none;" title="The release year range of the game.">?</a>)
         </fieldset>
         <fieldset>
             <div id="wishlist" data-max="10000" class="offerSlider"></div>
-            Wishlist count (<a style="cursor: help; text-decoration: none;" title="The range of wishlist count, the number of Barter.vg users that have the game in their wishlist">?</a>)
+            Wishlist count (<a style="cursor: help; text-decoration: none;" title="The range of the wishlist count: the number of Barter.vg users that have the game in their wishlist. \nI'd recommend adjusting this range to roughly match your selected tradable(s).">?</a>)
         </fieldset>
         <fieldset>
             <div id="library" data-max="10000" class="offerSlider"></div>
-            Library count (<a style="cursor: help; text-decoration: none;" title="The range of library count, the number of Barter.vg users that have the game in their library">?</a>)
+            Library count (<a style="cursor: help; text-decoration: none;" title="The range of the library count: the number of Barter.vg users that have the game in their library. \nIf you want only rare games (games nobody or only a few have), you can lower the upper range bound.">?</a>)
         </fieldset>
         <fieldset style="border-bottom: 1px solid rgb(153, 17, 187);">
             <div id="tradables" data-max="10000" class="offerSlider"></div>
-            Tradables count (<a style="cursor: help; text-decoration: none;" title="The range of tradables count, the number of Barter.vg users that have the game to trade">?</a>)
+            Tradables count (<a style="cursor: help; text-decoration: none;" title="The range of the tradables count or availability: the number of Barter.vg users that have the game to trade.">?</a>)
         </fieldset>
         <p style="float: left;">...from these platforms...</p>
         <p style="margin-left: 50%;">...from users who...</p>
         <div style="width: 50%; float: right; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
             <ul>
                 <li> <input type="checkbox" name="want_from" id="wantwishlist" value="wishlist" checked="true"> <label for="wantwishlist">...have those tradables in your wishlist.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned" checked="true"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your library.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your library.</label></li>
                 <li> <input type="checkbox" name="want_from" id="wantlibrary" value="library"> <label for="wantlibrary">...have those tradables in your library.</label></li>
                 <li> <input type="checkbox" name="want_from" id="wanttradable" value="tradable"> <label for="wanttradable">...have those tradables in your tradables list.</label></li>
             </ul>
@@ -873,6 +917,7 @@ function setupAutomatedOffer() {
 }
 
 function addSlider(slider) {
+    const min = parseInt($(slider).data(`min`)) || 0;
     const max = parseInt($(slider).data(`max`)) || 1000;
     const digits = max.toString().split(``).length;
     const prefix = $(slider).data(`prefix`) || ``;
@@ -898,15 +943,16 @@ function addSlider(slider) {
         return `${prefix}${Number(val).toFixed(0)}${suffix}`;
     };
 
-    const range = {
-        "min": 0,
-        "max": max
-    };
-    let percentage = 0;
-    for (let i = 1; i <= digits - 1; i++) {
-        percentage += 100 / (digits - 1);
-        range[`${percentage}%`] = Math.pow(10, i);
+    const range = { min, max };
+    const n = Math.log10(max);
+    if (min === 0 && n - Math.floor(n) === 0) {
+        let percentage = 0;
+        for (let i = 1; i <= digits - 1; i++) {
+            percentage += 100 / (digits - 1);
+            range[`${percentage}%`] = Math.pow(10, i);
+        }
     }
+
     // eslint-disable-next-line no-undef
     noUiSlider.create(slider, {
         "start": isToggle && !isPercent ? max : [0, max],
@@ -958,6 +1004,11 @@ function checkSettings(settings) {
         return;
     }
 
+    if (!settings.type) {
+        alert(`Please select 1 or more tradable type(s) you want to ask tradables from.`);
+        return;
+    }
+
     if (!settings.platform) {
         alert(`Please select 1 or more platform(s) you want to ask tradables from.`);
         return;
@@ -976,6 +1027,7 @@ function checkSettings(settings) {
     settings.offering_to = Array.isArray(settings.offering_to) ? settings.offering_to.map((g) => g.toLowerCase()) : [settings.offering_to.toLowerCase()];
     settings.want_from = Array.isArray(settings.want_from) ? settings.want_from.map((g) => g.toLowerCase()) : [settings.want_from.toLowerCase()];
     settings.platform = Array.isArray(settings.platform) ? settings.platform : [settings.platform];
+    settings.type = Array.isArray(settings.type) ? settings.type.map((g) => g.toLowerCase()) : [settings.type.toLowerCase()];
 
     if (settings.offering.length < settings.from_ratio) {
         alert(`Please select ${settings.from_ratio} or more of your tradable(s) that you want to offer.`);
@@ -1068,15 +1120,15 @@ async function sendAutomatedOffers(options) {
     const mytradables = {};
     const { tags, "user": { region } } = await getBarterTradables(parseInt(myuid, 16));
     const tagregions = {
-        "26": region,
+        // "26": region,
         // "27": `RU`,
         "28": 1,
         "29": 2,
         "30": 3,
         "31": 4,
         "34": 6,
-        "35": 5,
-        "346": region
+        "35": 5
+        // "346": region
         // "364": `PL`,
         // "376": `ROW`,
         // "387": `DE`,
@@ -1428,6 +1480,10 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
         pass = pass && game.extra > 0;
     }
 
+    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`type`)) {
+        pass = pass && settings.type.includes(game.item_type.toLowerCase());
+    }
+
     if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`minDLC`) && settings.hasOwnProperty(`maxDLC`)) {
         if (settings.minDLC === 0 && settings.maxDLC === 0) {
             pass = pass && game.item_type.toLowerCase() !== `dlc`;
@@ -1477,6 +1533,10 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
 
     if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
         pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) / 100);
+    }
+
+    if (pass && settings.hasOwnProperty(`minyear`) && settings.hasOwnProperty(`maxyear`)) {
+        pass = pass && inRange(settings.minyear, settings.maxyear, game.year || 0);
     }
 
     if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
@@ -1752,7 +1812,7 @@ function shuffle(array) {
 }
 
 function inRange(num1, num2, numTest) {
-    const [min, max] = [num1, num2].sort((a, b) => a > b);
+    const [min, max] = [parseInt(num1), parseInt(num2)].sort((a, b) => a > b);
     return numTest >= min && numTest <= max;
 }
 
