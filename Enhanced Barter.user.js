@@ -611,7 +611,7 @@ function setupAutomatedOffer() {
             <input type="checkbox" name="type" id="series" value="series"> <label for="series">Series</label>
             <input type="checkbox" name="type" id="guide" value="guide"> <label for="guide">Guide</label>
             <input type="checkbox" name="type" id="config" value="config"> <label for="config">Config</label>
-            <input type="checkbox" name="type" id="storeonly" value="storeonly"> <label for="storeonly">StoreOnly</label>
+            <input type="checkbox" name="type" id="storeonly" value="storeonly"> <label for="storeonly">Storefront Only</label>
             <input type="checkbox" name="type" id="advertising" value="advertising"> <label for="advertising">Advertising</label>
             <input type="checkbox" name="type" id="hardware" value="hardware"> <label for="hardware">Hardware</label>
             <input type="checkbox" name="type" id="unknown" value="unknown"> <label for="unknown">Unknown</label>
@@ -662,6 +662,10 @@ function setupAutomatedOffer() {
         <fieldset>
             <div id="price" data-max="10000" data-prefix="$" class="offerSlider"></div>
             Price (<a style="cursor: help; text-decoration: none;" title="The price range of the game. \nThe default range (0$-max$) allows games with any price amount. \nI'd recommend adjusting this range to roughly match your selected tradable(s).">?</a>)
+        </fieldset>
+        <fieldset>
+            <div id="year" data-min="1950" data-max="2050" class="offerSlider"></div>
+            Release year (<a style="cursor: help; text-decoration: none;" title="The release year range of the game.">?</a>)
         </fieldset>
         <fieldset>
             <div id="wishlist" data-max="10000" class="offerSlider"></div>
@@ -913,6 +917,7 @@ function setupAutomatedOffer() {
 }
 
 function addSlider(slider) {
+    const min = parseInt($(slider).data(`min`)) || 0;
     const max = parseInt($(slider).data(`max`)) || 1000;
     const digits = max.toString().split(``).length;
     const prefix = $(slider).data(`prefix`) || ``;
@@ -938,15 +943,16 @@ function addSlider(slider) {
         return `${prefix}${Number(val).toFixed(0)}${suffix}`;
     };
 
-    const range = {
-        "min": 0,
-        "max": max
-    };
-    let percentage = 0;
-    for (let i = 1; i <= digits - 1; i++) {
-        percentage += 100 / (digits - 1);
-        range[`${percentage}%`] = Math.pow(10, i);
+    const range = { min, max };
+    const n = Math.log10(max);
+    if (min === 0 && n - Math.floor(n) === 0) {
+        let percentage = 0;
+        for (let i = 1; i <= digits - 1; i++) {
+            percentage += 100 / (digits - 1);
+            range[`${percentage}%`] = Math.pow(10, i);
+        }
     }
+
     // eslint-disable-next-line no-undef
     noUiSlider.create(slider, {
         "start": isToggle && !isPercent ? max : [0, max],
@@ -1529,6 +1535,10 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
         pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) / 100);
     }
 
+    if (pass && settings.hasOwnProperty(`minyear`) && settings.hasOwnProperty(`maxyear`)) {
+        pass = pass && inRange(settings.minyear, settings.maxyear, game.year || 0);
+    }
+
     if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
         pass = pass && inRange(settings.minwishlist, settings.maxwishlist, game.wishlist || 0);
     }
@@ -1802,7 +1812,7 @@ function shuffle(array) {
 }
 
 function inRange(num1, num2, numTest) {
-    const [min, max] = [num1, num2].sort((a, b) => a > b);
+    const [min, max] = [parseInt(num1), parseInt(num2)].sort((a, b) => a > b);
     return numTest >= min && numTest <= max;
 }
 
