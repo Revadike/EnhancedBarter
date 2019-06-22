@@ -1466,6 +1466,7 @@ async function jqueryPost(url, data, callback) {
 
     if (response) {
         callback(response.responseText);
+        return;
     }
 }
 
