@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.0
+// @version      1.2.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -44,20 +44,21 @@ function initBarter() {
     setInterval(handleRequests, requestRateLimit);
 
     $.fn.serializeObject = serializeObject;
-    $.ajaxSetup({
-        "beforeSend": (xhr, options) => {
-            showSpinner(options.url);
+    // $.ajaxSetup({
+    //     "beforeSend": (xhr, options) => {
+    //         showSpinner(options.url);
 
-            xhr.url = options.url;
-            const request = () => {
-                options.beforeSend = (x, o) => x.url = o.url;
-                $.ajax(options);
-            };
+    //         xhr.url = options.url;
+    //         const request = () => {
+    //             options.beforeSend = (x, o) => x.url = o.url;
+    //             $.ajax(options);
+    //         };
 
-            requests.push(request);
-        },
-        "complete": (xhr) => hideSpinner(xhr.url)
-    });
+    //         requests.push(request);
+    //     },
+    //     "complete": (xhr) => hideSpinner(xhr.url)
+    // });
+    $.post = jqueryPost;
 
     unsafeWindow.$ = $;
     unsafeWindow.syncLibrary = syncLibrary;
@@ -1451,6 +1452,21 @@ function sendBarterOffer(options) {
 
 function delay(ms) {
     return new Promise((res) => setTimeout(() => res(), ms));
+}
+
+async function jqueryPost(url, data, callback) {
+    const response = await request({
+        "url": url,
+        "method": `POST`,
+        "headers": {
+            "Content-Type": `application/x-www-form-urlencoded`
+        },
+        "data": $.param(data)
+    }).catch(callback);
+
+    if (response) {
+        callback(response.responseText);
+    }
 }
 
 function request(options) {
