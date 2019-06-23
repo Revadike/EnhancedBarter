@@ -1489,7 +1489,7 @@ function request(options) {
 function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
     if (!pass) {
-        return;
+        return pass;
     }
     // console.log(game.title, pass, new Error);
 
