@@ -1,13 +1,27 @@
-# EnhancedBarter
-Enhanced Barter Userscript
+[![GitHub stable release version](https://img.shields.io/github/release/Revadike/EnhancedBarter.svg?label=Stable&maxAge=600)](https://github.com/Revadike/EnhancedBarter/releases/latest)
+[![GitHub stable release date](https://img.shields.io/github/release-date/Revadike/EnhancedBarter.svg?label=Released&maxAge=600)](https://github.com/Revadike/EnhancedBarter/releases/latest)
+[![Github stable release downloads](https://img.shields.io/github/downloads/Revadike/EnhancedBarter/latest/total.svg?label=Downloads&maxAge=600)](https://github.com/Revadike/EnhancedBarter/releases/latest)
 
-# Screenshot
-![](http://i.imgur.com/ZfaJKpT.png)
+[![Bitcoin donate](https://img.shields.io/badge/Bitcoin-donate-yellow.svg)](https://www.blockchain.com/btc/payment_request?address=133YTipt9VUuB7EsYnkPFuVGutNc9UzswF)
+[![Steam donate](https://img.shields.io/badge/Steam-donate-yellow.svg)](https://steamcommunity.com/tradeoffer/new/?partner=82699538&token=V7DQVtra)
+
+# About
+Enhanced Barter aims to enhance your experience at barter.vg.
+
+# Features
+ * Comprehensive library sync (DLC support)
+ * Automated trading
+ * Selection invertion
+ * New filter options
+ * Many more features!
 
 # Instructions
 1. Install [Tampermonkey](https://tampermonkey.net/)
 2. Install [Enhanced Barter](https://github.com/Revadike/EnhancedBarter/raw/master/Enhanced%20Barter.user.js)
 3. Enjoy!
+
+# Screenshot
+![](http://i.imgur.com/ZfaJKpT.png)
 
 # Change Log
  * *Later versions*
