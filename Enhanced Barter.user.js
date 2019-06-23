@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.1
+// @version      1.2.2
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -1464,7 +1464,7 @@ async function jqueryPost(url, data, callback) {
         "data": $.param(data)
     }).catch(callback);
 
-    if (response) {
+    if (response && callback) {
         callback(response.responseText);
         return;
     }
@@ -1488,18 +1488,25 @@ function request(options) {
 
 function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
+    if (!pass) {
+        return;
+    }
+    // console.log(game.title, pass, new Error);
 
     if (pass && myregion && game.regions && game.regions.length > 0) {
         pass = pass && game.regions.includes(myregion); // their tradable region lock has my region
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
         pass = pass && game.extra > 0;
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`type`)) {
         pass = pass && settings.type.includes(game.item_type.toLowerCase());
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`minDLC`) && settings.hasOwnProperty(`maxDLC`)) {
         if (settings.minDLC === 0 && settings.maxDLC === 0) {
@@ -1509,6 +1516,7 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
             pass = pass && game.item_type.toLowerCase() === `dlc`;
         }
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minlimited`) && settings.hasOwnProperty(`maxlimited`)) {
         if (settings.minlimited === 0 && settings.maxlimited === 0) {
@@ -1518,6 +1526,7 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
             pass = pass && limited_items.includes(game.item_id);
         }
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`mingivenaway`) && settings.hasOwnProperty(`maxgivenaway`)) {
         if (settings.mingivenaway === 0 && settings.maxgivenaway === 0) {
@@ -1527,46 +1536,57 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
             pass = pass && (game.givenaway || 0) !== 0;
         }
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minbundles`) && settings.hasOwnProperty(`maxbundles`)) {
         pass = pass && inRange(settings.minbundles, settings.maxbundles, game.bundles_all || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`mincards`) && settings.hasOwnProperty(`maxcards`)) {
         pass = pass && inRange(settings.mincards, settings.maxcards, game.cards || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minachievements`) && settings.hasOwnProperty(`maxachievements`)) {
         pass = pass && inRange(settings.minachievements, settings.maxachievements, game.achievements || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minreviews`) && settings.hasOwnProperty(`maxreviews`)) {
         pass = pass && inRange(settings.minreviews, settings.maxreviews, game.reviews_total || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minscores`) && settings.hasOwnProperty(`maxscores`)) {
         pass = pass && inRange(settings.minscores, settings.maxscores, game.reviews_positive || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
         pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) / 100);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minyear`) && settings.hasOwnProperty(`maxyear`)) {
-        pass = pass && inRange(settings.minyear, settings.maxyear, game.year || 0);
+        pass = pass && inRange(settings.minyear, settings.maxyear, game.release_year || 1950);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
         pass = pass && inRange(settings.minwishlist, settings.maxwishlist, game.wishlist || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`minlibrary`) && settings.hasOwnProperty(`maxlibrary`)) {
         pass = pass && inRange(settings.minlibrary, settings.maxlibrary, game.library || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     if (pass && settings.hasOwnProperty(`mintradables`) && settings.hasOwnProperty(`maxtradables`)) {
         pass = pass && inRange(settings.mintradables, settings.maxtradables, game.tradable || 0);
     }
+    // console.log(game.title, pass, new Error);
 
     return pass;
 }
