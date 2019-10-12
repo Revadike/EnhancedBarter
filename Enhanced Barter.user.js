@@ -1036,7 +1036,7 @@ function checkSettings(settings) {
     }
 
     if (settings.offering.length > 100) {
-        alert(`Please select 100 or less of your tradable(s) that you want to offer.`);
+        alert(`Please select 100 or fewer of your tradable(s) that you want to offer.`);
         return;
     }
 
