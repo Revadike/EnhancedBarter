@@ -3,11 +3,10 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.2
+// @version      1.2.3
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
-// @connect      revadike.ga
 // @connect      steamcommunity.com
 // @connect      steamtrades.com
 // @connect      store.steampowered.com
@@ -302,14 +301,14 @@ function enableAllTradables(event) {
 
 function checkAllTradables(event) {
     event.preventDefault();
-    $(event.target).parents(`.tradables`).find(`.collectionSelect input[type=checkbox]`).get().forEach((elem) => elem.checked = !elem.checked);
+    $(event.target).parents(`.tradables`).find(`.collectionSelect input[type=checkbox]:visible`).get().forEach((elem) => elem.checked = !elem.checked);
 }
 
 function toggleBundleItems(event) {
     event.preventDefault();
     $(`.collection tbody > tr:has(${$(`#toggleselect`).val()}):not(:has(.bargraphs))`).toggle();
-    $(`.collection tbody > tr:visible [type=checkbox]`).prop(`disabled`, false);
-    $(`.collection tbody > tr:hidden [type=checkbox]`).prop(`disabled`, true);
+    $(`.collection tbody > tr:visible [type=checkbox]:visible`).prop(`disabled`, false);
+    $(`.collection tbody > tr:hidden [type=checkbox]:visible`).prop(`disabled`, true);
 }
 
 function createRep(rep) {
@@ -1036,7 +1035,7 @@ function checkSettings(settings) {
     }
 
     if (settings.offering.length > 100) {
-        alert(`Please select 100 or fewer of your tradable(s) that you want to offer.`);
+        alert(`Please select 100 or less of your tradable(s) that you want to offer.`);
         return;
     }
 
@@ -1314,6 +1313,7 @@ async function sendAutomatedOffers(options) {
             "counter_preference": settings.counter_preference,
             "add_to_offer_from[]": ato1,
             "add_to_offer_to[]": ato2,
+            // "settings": JSON.stringify(settings),
             "message": settings.message || ``
         }).catch((err) => {
             failed++;
@@ -1489,7 +1489,7 @@ function request(options) {
 function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
     if (!pass) {
-        return pass;
+        return;
     }
     // console.log(game.title, pass, new Error);
 
@@ -1592,11 +1592,16 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
 }
 
 function passesTheirPreferences(game, user, optins, group, offeringcount) { // game = my tradable
+    // const my_user_id = parseInt(myuid, 16);
     let pass = user.region && game.regions && game.regions.length > 0 ? game.regions.includes(user.region) : true;
 
-    if (pass && user.hasOwnProperty(`steam_id64_string`) && optins.hasOwnProperty(user.steam_id64_string)) {
-        pass = pass && optins[user.steam_id64_string];
-    }
+    // if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(`global`) && optins.global.hasOwnProperty(user.user_id)) {
+    //     pass = pass && optins.global[user.user_id];
+    // }
+
+    // if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(user.user_id)) {
+    //     pass = pass && optins[user.user_id][my_user_id];
+    // }
 
     if (pass && user.hasOwnProperty(`wants_unowned`)) {
         if (user.wants_unowned === 0) {
