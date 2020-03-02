@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.3
+// @version      1.2.2
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -1489,7 +1489,7 @@ function request(options) {
 function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
     if (!pass) {
-        return;
+        return pass;
     }
     // console.log(game.title, pass, new Error);
 
@@ -1592,16 +1592,16 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
 }
 
 function passesTheirPreferences(game, user, optins, group, offeringcount) { // game = my tradable
-    // const my_user_id = parseInt(myuid, 16);
+    const my_user_id = parseInt(myuid, 16);
     let pass = user.region && game.regions && game.regions.length > 0 ? game.regions.includes(user.region) : true;
 
-    // if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(`global`) && optins.global.hasOwnProperty(user.user_id)) {
-    //     pass = pass && optins.global[user.user_id];
-    // }
+    if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(`global`) && optins.global.hasOwnProperty(user.user_id)) {
+        pass = pass && optins.global[user.user_id];
+    }
 
-    // if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(user.user_id)) {
-    //     pass = pass && optins[user.user_id][my_user_id];
-    // }
+    if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(user.user_id)) {
+        pass = pass && optins[user.user_id][my_user_id];
+    }
 
     if (pass && user.hasOwnProperty(`wants_unowned`)) {
         if (user.wants_unowned === 0) {
