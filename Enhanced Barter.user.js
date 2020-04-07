@@ -390,28 +390,28 @@ function addAutoComplete() {
         }).blur(() => setTimeout(() => $(`#acbox`).hide(), 200)).focus(() => $(`#acbox`).show());
         return;
     }
+    
+//     request({
+//         "method": `GET`,
+//         "url": `https://barter.vg/browse/json/`,
+//         "onload": (response) => {
+//             let json;
+//             try {
+//                 json = JSON.parse(response.responseText);
+//             } catch (e) {
+//                 return;
+//             }
 
-    request({
-        "method": `GET`,
-        "url": `https://barter.vg/browse/json/`,
-        "onload": (response) => {
-            let json;
-            try {
-                json = JSON.parse(response.responseText);
-            } catch (e) {
-                return;
-            }
+//             itemnames.data = {};
+//             for (const id in json) {
+//                 itemnames.data[id] = json[id].title.trim();
+//             }
 
-            itemnames.data = {};
-            for (const id in json) {
-                itemnames.data[id] = json[id].title.trim();
-            }
-
-            itemnames.lastupdated = Date.now();
-            localStorage.itemnames = JSON.stringify(itemnames);
-            addAutoComplete();
-        }
-    });
+//             itemnames.lastupdated = Date.now();
+//             localStorage.itemnames = JSON.stringify(itemnames);
+//             addAutoComplete();
+//         }
+//     });
 }
 
 function handleRequests() {
