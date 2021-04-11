@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.2
+// @version      1.2.3
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -28,11 +28,27 @@
 // @updateURL    https://github.com/Revadike/EnhancedBarter/raw/master/Enhanced%20Barter.user.js
 // ==/UserScript==
 
+// ==Linting==
+/* eslint-disable camelcase */
+/* eslint-disable complexity */
+/* eslint-disable consistent-return */
+/* eslint-disable init-declarations */
+/* eslint-disable max-len */
+/* eslint-disable no-alert */
+/* eslint-disable no-async-promise-executor */
+/* eslint-disable no-console */
+/* eslint-disable no-empty-function */
+/* eslint-disable no-loop-func */
+/* eslint-disable no-prototype-builtins */
+/* eslint-disable no-undefined */
+/* eslint-disable no-use-before-define */
+// ==/Linting==
+
 // ==Code==
-"use strict";
+
 const requests = [];
 const requestRateLimit = 200;
-const localStorage = unsafeWindow.localStorage;
+const { localStorage } = unsafeWindow;
 let myuid, mysid, streps, usergroups, itemnames;
 
 function init() {
@@ -65,57 +81,61 @@ function initBarter() {
 }
 
 function barterReady() {
-    console.log(`[Enhanced Barter] Enhancing`);
+    console.log("[Enhanced Barter] Enhancing");
 
     // Every barter page
     setTimeout(ajaxify, 0);
-    GM_addStyle(GM_getResourceText(`noUiSliderCss`));
+    GM_addStyle(GM_getResourceText("noUiSliderCss"));
     GM_addStyle(stylesheet);
 
-    $(`li.bottomline`).after(`<li class="bottomline" title="${GM_info.script.name} (${GM_info.script.version}) by ${GM_info.script.author}">
+    $("li.bottomline").after(`<li class="bottomline" title="${GM_info.script.name} (${GM_info.script.version}) by ${GM_info.script.author}">
         <a target="_blank" href="https://github.com/Revadike/EnhancedBarter/">
             <span>&#129302;&#xFE0E;</span>${GM_info.script.name}
         </a>
     </li>`);
 
-    $(`.sortBy`).after(`<div id="filtercontainer">
+    $(".sortBy").after(`<div id="filtercontainer">
         <span class="activityIcon normal gray">¶</span> Filter by 
         <input id="filterBy" type="text" placeholder="Search in displayed rows..." style="width: 530px;">
     </div>`);
-    $(`#filtercontainer`).attr(`class`, $(`.sortBy`).attr(`class`));
-    $(`#filterBy`).on(`change keyup paste`, filterRows);
+    $("#filtercontainer").attr("class", $(".sortBy").attr("class"));
+    $("#filterBy").on("change keyup paste", filterRows);
 
-    streps = JSON.parse(localStorage.stReps || `{}`);
-    $(`a:has(>[alt="Steam Trades icon"])`).get().forEach(addSteamTradesRep);
+    streps = JSON.parse(localStorage.stReps || "{}");
+    $("a:has(>[alt=\"Steam Trades icon\"])").get()
+        .forEach(addSteamTradesRep);
 
-    if ($(`#q`).length > 0) {
-        itemnames = JSON.parse(localStorage.itemnames || `{}`);
+    if ($("#q").length > 0) {
+        itemnames = JSON.parse(localStorage.itemnames || "{}");
         addAutoComplete();
     }
 
-    usergroups = JSON.parse(localStorage.usergroups || `{}`);
+    usergroups = JSON.parse(localStorage.usergroups || "{}");
 
     // The match page and user profile page
-    $(`#tradeUser [label=Groups] option, [name=group] option`).get().forEach((elem) => {
-        const id = Math.abs(elem.value);
-        const offset = 64; // Char code offset
-        const name = usergroups[id >= offset ? id - offset : id];
-        if (!name) {
-            return;
-        }
+    $("#tradeUser [label=Groups] option, [name=group] option").get()
+        .forEach((elem) => {
+            const id = Math.abs(elem.value);
+            const offset = 64; // Char code offset
+            const name = usergroups[id >= offset ? id - offset : id];
+            if (!name) {
+                return;
+            }
 
-        elem.innerText = `${elem.innerText} : ${name}`;
-    });
+            elem.innerText = `${elem.innerText} : ${name}`;
+        });
 
     // The match page
-    const cats = [`trade`, `wish`];
+    const cats = ["trade", "wish"];
     const sortings = {};
     cats.forEach((cat) => {
         sortings[cat] = {};
-        sortings[cat][`az`] = $(`select#${cat}Game option`).get();
+        sortings[cat].az = $(`select#${cat}Game option`).get();
 
         const initial = sortings[cat].az.shift();
-        sortings[cat][`90`] = [...sortings[cat].az].sort((a, b) => parseInt(b.innerText.split(` (`).pop().replace(`)`, ``)) - parseInt(a.innerText.split(` (`).pop().replace(`)`, ``)));
+        sortings[cat]["90"] = [...sortings[cat].az].sort((a, b) => parseInt(b.innerText.split(" (").pop()
+            .replace(")", "")) - parseInt(a.innerText.split(" (").pop()
+            .replace(")", "")));
 
         $(`select#${cat}Game`).after(`
             <div id="${cat}Sort" style="display: inline;">
@@ -127,18 +147,22 @@ function barterReady() {
         `);
 
         $(`#${cat}Sort [data-sort]`).click((event) => {
-            $(`#${cat}Sort [data-selected="1"]`).attr(`data-selected`, 0).attr(`style`, `cursor: pointer;`);
-            $(event.target).attr(`data-selected`, 1).attr(`style`, `text-decoration: none; font-weight: bold; color: inherit;`);
+            $(`#${cat}Sort [data-selected="1"]`).attr("data-selected", 0)
+                .attr("style", "cursor: pointer;");
+            $(event.target).attr("data-selected", 1)
+                .attr("style", "text-decoration: none; font-weight: bold; color: inherit;");
 
-            const sortby = $(event.target).data(`sort`);
+            const sortby = $(event.target).data("sort");
             console.log(sortings[cat][sortby][0]);
-            $(`select#${cat}Game`).html([initial, ...sortings[cat][sortby]]).val(0);
+            $(`select#${cat}Game`).html([initial, ...sortings[cat][sortby]])
+                .val(0);
         });
     });
 
     // Any bundle page
-    if ($(`[accesskey="b"]`).parent().hasClass(`nav-sel`)) {
-        $(`.warnings`).append(`<li style="float: right">
+    if ($("[accesskey=\"b\"]").parent()
+        .hasClass("nav-sel")) {
+        $(".warnings").append(`<li style="float: right">
             <input id="togglebtn" onsubmit="void(0)" value="Hide/Show" type="button" class="addTo offer bold pborder">
         </li>
         <li style="float: right">
@@ -151,38 +175,47 @@ function barterReady() {
             </select>
         </li>`);
 
-        $(`#togglebtn`).click(toggleBundleItems);
+        $("#togglebtn").click(toggleBundleItems);
     }
 
     // The creating offer page
-    $(`[name=remove_offer_items]`).val(`－ Remove Selected`).css(`width`, `23.8%`).css(`margin-left`, `-4px`).removeClass(`extraLeft`).after(`<input type="button" value="◧ Invert Selection" style="width: 23.8%; margin-left: 0.5%" class="checkall addTo bborder" onsubmit="void(0)"><input type="button" value="&#128275;&#xFE0E; Enable Locked" style="width: 23.8%; margin-left: 0.5%" class="enableall addTo oborder" onsubmit="void(0)">`);
-    $(`[name=add_to_offer]`).val(`+ Add Selected`).css(`width`, `23.8%`).css(`margin-right`, `0.5%`);
+    $("[name=remove_offer_items]").val("－ Remove Selected")
+        .css("width", "23.8%")
+        .css("margin-left", "-4px")
+        .removeClass("extraLeft")
+        .after("<input type=\"button\" value=\"◧ Invert Selection\" style=\"width: 23.8%; margin-left: 0.5%\" class=\"checkall addTo bborder\" onsubmit=\"void(0)\"><input type=\"button\" value=\"&#128275;&#xFE0E; Enable Locked\" style=\"width: 23.8%; margin-left: 0.5%\" class=\"enableall addTo oborder\" onsubmit=\"void(0)\">");
+    $("[name=add_to_offer]").val("+ Add Selected")
+        .css("width", "23.8%")
+        .css("margin-right", "0.5%");
 
-    $(`.checkall`).click(checkAllTradables);
-    $(`.enableall`).click(enableAllTradables);
+    $(".checkall").click(checkAllTradables);
+    $(".enableall").click(enableAllTradables);
 
     // Every next barter page will have the sign out link
-    if ($(`#signin`).length === 0 || $(`abbr+ a:has(.icon)`).length === 0) {
+    if ($("#signin").length === 0 || $("abbr+ a:has(.icon)").length === 0) {
         return;
     }
 
-    myuid = $(`#signin`).attr(`href`).split(`/`)[4];
-    mysid = $(`abbr+ a:has(.icon)`).attr(`href`).split(`/`)[4];
+    myuid = $("#signin").attr("href")
+        .split("/")[4];
+    mysid = $("abbr+ a:has(.icon)").attr("href")
+        .split("/")[4];
 
     // Every next barter page will be on /u/myuid/
-    if (!$(`h1 > a`).is(`[href*="/u/${myuid}"]`)) {
+    if (!$("h1 > a").is(`[href*="/u/${myuid}"]`)) {
         return;
     }
 
     // The library page
-    if ($(`[accesskey="l"]`).parent().hasClass(`nav-sel`) ) {
-        $(`[name="sync_list"]`).after(`<input type="button" title="Sync ALL owned games and DLC" value="↻ Comprehensive Sync with Steam" style="margin-left: 0.5%" id="libsync" class="addTo gborder" onsubmit="void(0)">`);
-        $(`#libsync`).click(clickLibSyncBtn);
+    if ($("[accesskey=\"l\"]").parent()
+        .hasClass("nav-sel")) {
+        $("[name=\"sync_list\"]").after("<input type=\"button\" title=\"Sync ALL owned games and DLC\" value=\"↻ Comprehensive Sync with Steam\" style=\"margin-left: 0.5%\" id=\"libsync\" class=\"addTo gborder\" onsubmit=\"void(0)\">");
+        $("#libsync").click(clickLibSyncBtn);
     }
 
     // The settings page
-    if ($(`.preferences`).length > 0) {
-        $(`#offer`).before(`<div id="groups">
+    if ($(".preferences").length > 0) {
+        $("#offer").before(`<div id="groups">
             <h3 class="listName sborder">&#x1F46A;&#xFE0E; User Group Names</h3>
             <p>
                 <select name="groupid">
@@ -218,28 +251,30 @@ function barterReady() {
             </p>
         </div>`);
 
-        $(`#savegroup`).click((event) => {
+        $("#savegroup").click((event) => {
             event.preventDefault();
-            const id = $(`[name=groupid]`).val();
-            const name = $(`[name=groupname]`).val();
+            const id = $("[name=groupid]").val();
+            const name = $("[name=groupname]").val();
             usergroups[id] = name;
             localStorage.usergroups = JSON.stringify(usergroups);
         });
 
-        $(`[name=groupid]`).change((event) => {
+        $("[name=groupid]").change((event) => {
             const id = event.target.value;
-            $(`[name=groupname]`).val(usergroups[id]);
+            $("[name=groupname]").val(usergroups[id]);
         });
 
-        $(`[name=groupid]`).trigger(`change`);
+        $("[name=groupid]").trigger("change");
     }
 
     // The offer overview page
-    if ($(`li:has([accesskey="o"])`).is(`.nav-sel`) && $(`.activity`).length > 0) {
-        $(`[name="offer_setup"]+`).after(`<input id="automatedoffer" onsubmit="void(0)" value="Begin Automated Offer" class="addTo offer bold pborder" type="button" style="float: right;">`);
-        $(`#automatedoffer`).parents(`form`).css(`width`, `100%`);
-        $(`#automatedoffer`).click(setupAutomatedOffer);
-        $(`.showMoreArea`).last().after(`<p>
+    if ($("li:has([accesskey=\"o\"])").is(".nav-sel") && $(".activity").length > 0) {
+        $("[name=\"offer_setup\"]+").after("<input id=\"automatedoffer\" onsubmit=\"void(0)\" value=\"Begin Automated Offer\" class=\"addTo offer bold pborder\" type=\"button\" style=\"float: right;\">");
+        $("#automatedoffer").parents("form")
+            .css("width", "100%");
+        $("#automatedoffer").click(setupAutomatedOffer);
+        $(".showMoreArea").last()
+            .after(`<p>
             <label for="offersearch">
                 <strong>Filter: </strong>
             </label>
@@ -249,32 +284,34 @@ function barterReady() {
             <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="button" onsubmit="void(0)" value="Change Expiration">
         </p>`);
 
-        $(`#canceloffers`).click(cancelOffers);
-        $(`#messageoffers`).click(messageOffers);
-        $(`#extendoffers`).click(extendExpiry);
-        $(`#offersearch`).on(`change keyup paste`, searchOffers);
+        $("#canceloffers").click(cancelOffers);
+        $("#messageoffers").click(messageOffers);
+        $("#extendoffers").click(extendExpiry);
+        $("#offersearch").on("change keyup paste", searchOffers);
     }
 
     // The accepted offer page
-    $(`input[value='Completed Offer']`).click(finalizeOffer);
+    $("input[value='Completed Offer']").click(finalizeOffer);
 }
 
 function clickLibSyncBtn(event) {
     event.preventDefault();
-    showSpinner(`libsync`);
-    $(event.target).prop(`disabled`, true).val(`↻ Syncing...`);
+    showSpinner("libsync");
+    $(event.target).prop("disabled", true)
+        .val("↻ Syncing...");
     syncLibrary(() => {
-        hideSpinner(`libsync`);
-        $(event.target).prop(`disabled`, false).val(`✔ Done`);
+        hideSpinner("libsync");
+        $(event.target).prop("disabled", false)
+            .val("✔ Done");
     });
 }
 
 function showSpinner(instanceid) {
-    if ($(`.spinner`).length === 0) { // to avoid multiple spinners
-        $(`body`).prepend(`<div class="spinner"></div>`);
+    if ($(".spinner").length === 0) { // to avoid multiple spinners
+        $("body").prepend("<div class=\"spinner\"></div>");
     }
 
-    $(`.spinner`).attr(`data-instanceid`, instanceid);
+    $(".spinner").attr("data-instanceid", instanceid);
 }
 
 function hideSpinner(instanceid) {
@@ -284,43 +321,53 @@ function hideSpinner(instanceid) {
 function enableAllTradables(event) {
     event.preventDefault();
 
-    if (!confirm(`Are you sure you want to enable disabled tradables? Make sure the other party is okay with this!`)) {
+    if (!confirm("Are you sure you want to enable disabled tradables? Make sure the other party is okay with this!")) {
         return;
     }
 
-    $(event.target).parents(`.tradables`).find(`.collectionSelect input[disabled]`).get().forEach((elem) => {
-        elem.removeAttribute(`disabled`);
-        elem.removeAttribute(`title`);
-        elem.name = `add_to_offer_${$(`.enableall:first`).is(event.target) ? `1` : `2`}[]`;
-        elem.id = $(elem).find(`+`).attr(`for`);
-        elem.value = `${$(elem).parents(`tr`).data(`item-id`)},${$(elem).next().attr(`for`).replace(`edit`, ``)}`;
-    });
+    $(event.target).parents(".tradables")
+        .find(".collectionSelect input[disabled]")
+        .get()
+        .forEach((elem) => {
+            elem.removeAttribute("disabled");
+            elem.removeAttribute("title");
+            elem.name = `add_to_offer_${$(".enableall:first").is(event.target) ? "1" : "2"}[]`;
+            elem.id = $(elem).find("+")
+                .attr("for");
+            elem.value = `${$(elem).parents("tr")
+                .data("item-id")},${$(elem).next()
+                .attr("for")
+                .replace("edit", "")}`;
+        });
 
     $(event.target).remove();
 }
 
 function checkAllTradables(event) {
     event.preventDefault();
-    $(event.target).parents(`.tradables`).find(`.collectionSelect input[type=checkbox]:visible`).get().forEach((elem) => elem.checked = !elem.checked);
+    $(event.target).parents(".tradables")
+        .find(".collectionSelect input[type=checkbox]:visible")
+        .get()
+        .forEach((elem) => { elem.checked = !elem.checked; });
 }
 
 function toggleBundleItems(event) {
     event.preventDefault();
-    $(`.collection tbody > tr:has(${$(`#toggleselect`).val()}):not(:has(.bargraphs))`).toggle();
-    $(`.collection tbody > tr:visible [type=checkbox]:visible`).prop(`disabled`, false);
-    $(`.collection tbody > tr:hidden [type=checkbox]:visible`).prop(`disabled`, true);
+    $(`.collection tbody > tr:has(${$("#toggleselect").val()}):not(:has(.bargraphs))`).toggle();
+    $(".collection tbody > tr:visible [type=checkbox]:visible").prop("disabled", false);
+    $(".collection tbody > tr:hidden [type=checkbox]:visible").prop("disabled", true);
 }
 
 function createRep(rep) {
     if (rep && isFinite(rep.m) && isFinite(rep.p)) {
-        return `<span class="strep" title="Steam Trades score">( <span class="plus">+${rep.p}</span>, <span class="minus${rep.m !== 0 ? ` hasMinus` : ``}">${rep.m}</span> )</span>`;
+        return `<span class="strep" title="Steam Trades score">( <span class="plus">+${rep.p}</span>, <span class="minus${rep.m === 0 ? "" : " hasMinus"}">${rep.m}</span> )</span>`;
     }
 
-    return $(`<span class="strep notfound">( none )</span>`);
+    return $("<span class=\"strep notfound\">( none )</span>");
 }
 
 function addSteamTradesRep(elem) {
-    const steamid = elem.href.split(`/`)[4];
+    const steamid = elem.href.split("/")[4];
 
     if (streps[steamid] && streps[steamid].t && Date.now() - streps[steamid].t <= 48 * 60 * 60 * 1000) {
         $(elem).after(createRep(streps[steamid]));
@@ -328,12 +375,16 @@ function addSteamTradesRep(elem) {
     }
 
     request({
-        "method": `GET`,
-        "url": elem.href,
+        "method": "GET",
+        "url":    elem.href,
         "onload": (response) => {
             streps[steamid] = {};
-            const plus = parseInt($(`.increment_positive_review_count`, response.responseText).first().text().replace(`,`, ``));
-            const minus = parseInt($(`.increment_negative_review_count`, response.responseText).first().text().replace(`,`, ``));
+            const plus = parseInt($(".increment_positive_review_count", response.responseText).first()
+                .text()
+                .replace(",", ""));
+            const minus = parseInt($(".increment_negative_review_count", response.responseText).first()
+                .text()
+                .replace(",", ""));
 
             if (!isNaN(plus) && !isNaN(minus)) {
                 streps[steamid].p = plus;
@@ -343,7 +394,7 @@ function addSteamTradesRep(elem) {
             streps[steamid].t = Date.now();
             localStorage.stReps = JSON.stringify(streps);
             $(elem).after(createRep(streps[steamid]));
-        }
+        },
     });
 }
 
@@ -352,22 +403,23 @@ function addAutoComplete() {
         const data = Object.entries(itemnames.data).map((e) => ({ "id": e[0], "title": e[1] }));
         // eslint-disable-next-line no-undef
         const fuse = new Fuse(data, {
-            "shouldSort": true,
-            "threshold": 0.3,
-            "maxPatternLength": 32,
+            "shouldSort":         true,
+            "threshold":          0.3,
+            "maxPatternLength":   32,
             "minMatchCharLength": 2,
-            "keys": [`id`, `title`]
+            "keys":               ["id", "title"],
         });
 
         let delay;
-        $(`#q`).parent().append(`<div id="acbox" class="autocomplete"></div>`);
-        $(`#q`).on(`change keyup paste`, (event) => {
+        $("#q").parent()
+            .append("<div id=\"acbox\" class=\"autocomplete\"></div>");
+        $("#q").on("change keyup paste", (event) => {
             clearTimeout(delay);
-            showSpinner(`autocomplete`);
+            showSpinner("autocomplete");
             delay = setTimeout(() => {
                 const val = event.target.value.trim();
-                $(`#acbox`).html(``);
-                hideSpinner(`autocomplete`);
+                $("#acbox").html("");
+                hideSpinner("autocomplete");
 
                 if (val.length <= 2) {
                     return;
@@ -377,7 +429,7 @@ function addAutoComplete() {
                 for (let i = 0; i < 10; i++) {
                     const item = results.shift();
                     if (item) {
-                        $(`#acbox`).append(`<p style="margin: 0.5em;"><a href="/i/${item.id}/">${item.title}</a></p>`);
+                        $("#acbox").append(`<p style="margin: 0.5em;"><a href="/i/${item.id}/">${item.title}</a></p>`);
                     }
                 }
 
@@ -385,33 +437,34 @@ function addAutoComplete() {
                     return;
                 }
 
-                $(`#acbox`).append(`<strong style="margin: 0.5em;"><a href="/search?q=${encodeURIComponent(val)}">And ${results.length} more...</a></strong>`);
+                $("#acbox").append(`<strong style="margin: 0.5em;"><a href="/search?q=${encodeURIComponent(val)}">And ${results.length} more...</a></strong>`);
             }, 500);
-        }).blur(() => setTimeout(() => $(`#acbox`).hide(), 200)).focus(() => $(`#acbox`).show());
-        return;
+        })
+            .blur(() => setTimeout(() => $("#acbox").hide(), 200))
+            .focus(() => $("#acbox").show());
     }
-    
-//     request({
-//         "method": `GET`,
-//         "url": `https://barter.vg/browse/json/`,
-//         "onload": (response) => {
-//             let json;
-//             try {
-//                 json = JSON.parse(response.responseText);
-//             } catch (e) {
-//                 return;
-//             }
 
-//             itemnames.data = {};
-//             for (const id in json) {
-//                 itemnames.data[id] = json[id].title.trim();
-//             }
+    //     request({
+    //         "method": `GET`,
+    //         "url": `https://barter.vg/browse/json/`,
+    //         "onload": (response) => {
+    //             let json;
+    //             try {
+    //                 json = JSON.parse(response.responseText);
+    //             } catch (e) {
+    //                 return;
+    //             }
 
-//             itemnames.lastupdated = Date.now();
-//             localStorage.itemnames = JSON.stringify(itemnames);
-//             addAutoComplete();
-//         }
-//     });
+    //             itemnames.data = {};
+    //             for (const id in json) {
+    //                 itemnames.data[id] = json[id].title.trim();
+    //             }
+
+    //             itemnames.lastupdated = Date.now();
+    //             localStorage.itemnames = JSON.stringify(itemnames);
+    //             addAutoComplete();
+    //         }
+    //     });
 }
 
 function handleRequests() {
@@ -420,12 +473,12 @@ function handleRequests() {
     }
 
     if (requests.length === 1) {
-        setTimeout(() => console.log(`All ajax requests are served!`), requestRateLimit);
+        setTimeout(() => console.log("All ajax requests are served!"), requestRateLimit);
     }
 
     console.log(`${requests.length} Ajax requests remaining...\nThis will roughly take ${requests.length * requestRateLimit / 1000} seconds to complete.`);
     const req = requests.shift();
-    if (typeof request === `function`) {
+    if (typeof request === "function") {
         req();
     }
 }
@@ -433,18 +486,21 @@ function handleRequests() {
 function finalizeOffer(event) {
     event.preventDefault();
 
-    const main = $(event.target).parents(`#main`);
-    const steamid = $(`#offerHeader [alt="Steam icon"]`, main).get().map((elem) => elem.title).find((id) => id !== mysid);
+    const main = $(event.target).parents("#main");
+    const steamid = $("#offerHeader [alt=\"Steam icon\"]", main).get()
+        .map((elem) => elem.title)
+        .find((id) => id !== mysid);
     const name = $(`#offerHeader tr:has([title="${steamid}"]) > td:nth-child(2) > strong > a`, main).text();
-    const form = $(event.target).parents(`form`);
-    const url = form.attr(`action`).split(`#`)[0];
+    const form = $(event.target).parents("form");
+    const url = form.attr("action").split("#")[0];
     const msg = `＋REP ${name} is an amazing trader, recommended! We successfully completed this trade: ${url}. Thanks a lot for the trade!`;
 
-    $(event.target).val(`Completing trade, sending feedback and syncing library...`).prop(`disabled`, true);
-    showSpinner(`feedback`);
+    $(event.target).val("Completing trade, sending feedback and syncing library...")
+        .prop("disabled", true);
+    showSpinner("feedback");
 
     setPostTradeClipboard(url);
-    $.post(url, form.serializeObject(), () => postSteamTradesComment(msg, steamid, () => syncLibrary(() => location.href = url)));
+    $.post(url, form.serializeObject(), () => postSteamTradesComment(msg, steamid, () => syncLibrary(() => { location.href = url; })));
 }
 
 async function syncLibrary(callback) {
@@ -456,42 +512,38 @@ async function syncLibrary(callback) {
 
     return new Promise(async(res, rej) => {
         request({
-            "url": `https://barter.vg/u/${myuid}/l/`,
-            "method": `POST`,
-            "headers": {
-                "Content-Type": `application/x-www-form-urlencoded`
-            },
-            "data": $.param({
-                "sync_list": `↻ Sync List`,
-                "type": 1
+            "url":     `https://barter.vg/u/${myuid}/l/`,
+            "method":  "POST",
+            "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+            "data":    $.param({
+                "sync_list": "↻ Sync List",
+                "type":      1,
             }),
-            "onload": () => true
+            "onload": () => true,
         });
 
         const response = await request({
-            "method": `GET`,
-            "url": `http://store.steampowered.com/dynamicstore/userdata/?t=${Date.now()}`
+            "method": "GET",
+            "url":    `http://store.steampowered.com/dynamicstore/userdata/?t=${Date.now()}`,
         }).catch(rej);
 
         const json = JSON.parse(response.responseText);
         const ownedApps = json.rgOwnedApps;
         const ownedPackages = json.rgOwnedPackages;
         await request({
-            "url": `https://barter.vg/u/${myuid}/l/e/`,
-            "method": `POST`,
-            "headers": {
-                "Content-Type": `application/x-www-form-urlencoded`
-            },
-            "data": $.param({
-                "bulk_IDs": `app/${ownedApps.join(`,app/`)},sub/${ownedPackages.join(`,sub/`)}`,
-                "add_IDs": `+ Add IDs`,
-                "action": `Edit`,
+            "url":     `https://barter.vg/u/${myuid}/l/e/`,
+            "method":  "POST",
+            "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+            "data":    $.param({
+                "bulk_IDs":         `app/${ownedApps.join(",app/")},sub/${ownedPackages.join(",sub/")}`,
+                "add_IDs":          "+ Add IDs",
+                "action":           "Edit",
                 "change_attempted": 1,
-                "add_from": `IDs`
-            })
+                "add_from":         "IDs",
+            }),
         }).catch(rej);
 
-        res();
+        return res();
     });
 }
 
@@ -500,40 +552,40 @@ async function postSteamTradesComment(msg, steamid, callback) {
     callback = callback || empty;
 
     const response = await request({
-        "method": `GET`,
-        "url": `https://www.steamtrades.com/user/${steamid}`,
+        "method":  "GET",
+        "url":     `https://www.steamtrades.com/user/${steamid}`,
         "headers": {
-            "Accept": `text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3`,
-            "Accept-Encoding": `gzip, deflate, br`,
-            "Accept-Language": `en`
-        }
+            "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en",
+        },
     }).catch(callback);
 
-    const profile_id = $(`[name=profile_id]`, response.responseText).val();
-    const xsrf_token = $(`[name=xsrf_token]`, response.responseText).val();
+    const profile_id = $("[name=profile_id]", response.responseText).val();
+    const xsrf_token = $("[name=xsrf_token]", response.responseText).val();
     if (!profile_id || !xsrf_token) {
         callback();
         return;
     }
 
     const data = {
-        "do": `review_insert`,
-        "xsrf_token": xsrf_token,
-        "profile_id": profile_id,
-        "rating": 1,
-        "description": msg
+        "do":          "review_insert",
+        xsrf_token,
+        profile_id,
+        "rating":      1,
+        "description": msg,
     };
 
     await request({
-        "method": `POST`,
-        "url": `https://www.steamtrades.com/ajax.php`,
-        "data": $.param(data),
+        "method":  "POST",
+        "url":     "https://www.steamtrades.com/ajax.php",
+        "data":    $.param(data),
         "headers": {
-            "Content-Type": `application/x-www-form-urlencoded; charset=UTF-8`,
-            "Accept": `application/json, text/javascript, */*; q=0.01`,
-            "Accept-Encoding": `gzip, deflate, br`,
-            "Accept-Language": `en`
-        }
+            "Content-Type":    "application/x-www-form-urlencoded; charset=UTF-8",
+            "Accept":          "application/json, text/javascript, */*; q=0.01",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en",
+        },
     }).catch(callback);
 
     callback();
@@ -547,19 +599,22 @@ function setPostTradeClipboard(url) {
 
 function setupAutomatedOffer() {
     $.post(`/u/${myuid}/o/`, {
-        "to_user_id": -2,
-        "offer_setup": 1
+        "to_user_id":  -2,
+        "offer_setup": 1,
     }, (data) => {
-        $.post($(`[rel=canonical]`, `<div>${data}</div>`).attr(`href`), {
-            "offer_setup": 3,
-            "cancel_offer": `☒ Cancel Offer`
+        $.post($("[rel=canonical]", `<div>${data}</div>`).attr("href"), {
+            "offer_setup":  3,
+            "cancel_offer": "☒ Cancel Offer",
         });
 
         parseHtml(data);
-        $(`#main h2`).html(`&#x1F916;&#xFE0E;✉ Automated Offers`);
-        $(`#offerHeaderTo`).html(`To <strong>Qualified Users</strong> (select options below)`);
-        $(`#offerHeaderTo`).parent().next().remove();
-        $(`#offerHeaderTo`).parent().before(`<tr>
+        $("#main h2").html("&#x1F916;&#xFE0E;✉ Automated Offers");
+        $("#offerHeaderTo").html("To <strong>Qualified Users</strong> (select options below)");
+        $("#offerHeaderTo").parent()
+            .next()
+            .remove();
+        $("#offerHeaderTo").parent()
+            .before(`<tr>
             <td class="gray">
                 <span>Via</span>
             </td>
@@ -573,17 +628,22 @@ function setupAutomatedOffer() {
                 <span>(not associated with Barter.vg)</span>
             </td>
         </tr>`);
-        $(`#offer`).replaceWith(`<form id=offer>${$(`#offer`).html()}</form>`);
-        $(`[name=cancel_offer]`).replaceWith(`<input class="addTo failed" value="🗑 Cancel and Discard Offer" type="button" onclick="location.reload()">`);
-        $(`.tradables:nth-child(3) legend`).html(`${$(`.tradables:nth-child(3) legend`).html().replace(`<strong class="midsized offer">1</strong> of `, `<input min="1" id="from_ratio" name="from_ratio" type="number" value="1" style="width: 40px;"> of `)}...`);
+        $("#offer").replaceWith(`<form id=offer>${$("#offer").html()}</form>`);
+        $("[name=cancel_offer]").replaceWith("<input class=\"addTo failed\" value=\"🗑 Cancel and Discard Offer\" type=\"button\" onclick=\"location.reload()\">");
+        $(".tradables:nth-child(3) legend").html(`${$(".tradables:nth-child(3) legend").html()
+            .replace("<strong class=\"midsized offer\">1</strong> of ", "<input min=\"1\" id=\"from_ratio\" name=\"from_ratio\" type=\"number\" value=\"1\" style=\"width: 40px;\"> of ")}...`);
 
-        $(`form[action*=comments]`).remove();
-        $(`.noborder:nth-child(3)`).nextAll().remove();
-        $(`.collectionSelect`).nextAll().remove();
-        $(`#exchanges`).nextAll().remove();
-        $(`#offer`).nextAll().remove();
+        $("form[action*=comments]").remove();
+        $(".noborder:nth-child(3)").nextAll()
+            .remove();
+        $(".collectionSelect").nextAll()
+            .remove();
+        $("#exchanges").nextAll()
+            .remove();
+        $("#offer").nextAll()
+            .remove();
 
-        $(`.tradables`).after(`
+        $(".tradables").after(`
         <ul>
         ...to users who...
             <li> <input type="checkbox" name="offering_to" id="towishlist" value="wishlist" checked="true"> <label for="towishlist">...have them in their wishlist...</label></li>
@@ -854,22 +914,23 @@ function setupAutomatedOffer() {
             </ul>
         </div>`);
 
-        $(`#offerStatus`).html(`<div class="statusCurrent">Creating...</div><div class="">Preparing...</div><div class="">Sending offers...</div><div class="">Completed</div>`);
-        $(`#offer`).prepend(`<div>
+        $("#offerStatus").html("<div class=\"statusCurrent\">Creating...</div><div class=\"\">Preparing...</div><div class=\"\">Sending offers...</div><div class=\"\">Completed</div>");
+        $("#offer").prepend(`<div>
             <textarea class="offer_message" name="message" id="offerMessage" placeholder="Add a public comment to automated offers that is relevant and respectful" title="optional public comment up to 255 characters" maxlength="255" style="width: 100%;"></textarea>
         </div>`);
 
-        $(`#from_ratio`).attr(`max`, $(`.tradables input`).length);
-        $(`.tradables input[type=checkbox]`).click(() => {
-            const n = $(`.tradables input:checked`).length;
-            $(`#from_ratio`).attr(`max`, n || 1);
-            $(`#from_ratio`).val(Math.min(n || 1, parseInt($(`#from_ratio`).val())));
+        $("#from_ratio").attr("max", $(".tradables input").length);
+        $(".tradables input[type=checkbox]").click(() => {
+            const n = $(".tradables input:checked").length;
+            $("#from_ratio").attr("max", n || 1);
+            $("#from_ratio").val(Math.min(n || 1, parseInt($("#from_ratio").val())));
         });
-        $(`#from_ratio`).change(() => $(`#from_ratio`).val(Math.min(parseInt($(`#from_ratio`).attr(`max`)), parseInt($(`#from_ratio`).val()))));
+        $("#from_ratio").change(() => $("#from_ratio").val(Math.min(parseInt($("#from_ratio").attr("max")), parseInt($("#from_ratio").val()))));
 
-        $(`#exchanges`).nextAll().remove();
-        $(`[name=offer_setup]`).remove();
-        $(`#exchanges`).after(`
+        $("#exchanges").nextAll()
+            .remove();
+        $("[name=offer_setup]").remove();
+        $("#exchanges").after(`
         <p>
             <label for="expire_days">Offer expires in </label>
             <select name="expire_days" id="expire_days">
@@ -904,26 +965,27 @@ function setupAutomatedOffer() {
             <input type="checkbox" name="synclib" id="synclib" value="true" checked><label for="synclib">Synchronize your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam store userdata</a> first (RECOMMENDED).</label>
         </p>
         <p><button id="massSendBtn" class="addTo gborder acceptOption" style="font-weight: bold; color: green; width: 100%; height: 2em; font-size: 1.2em; cursor: pointer;">Finish and Send Automated Offers</button>`);
-        $(`#massSendBtn`).click((event) => {
+        $("#massSendBtn").click((event) => {
             event.preventDefault();
             sendAutomatedOffers();
         });
 
-        $(`[name='add_to_offer_1[]']`).attr(`name`, `offering`);
-        $(`#offerStatus+ div`).remove();
-        $(`#offerStatus`).attr(`style`, `border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);`);
-        $(`.offerSlider`).get().forEach(addSlider);
+        $("[name='add_to_offer_1[]']").attr("name", "offering");
+        $("#offerStatus+ div").remove();
+        $("#offerStatus").attr("style", "border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);");
+        $(".offerSlider").get()
+            .forEach(addSlider);
     });
 }
 
 function addSlider(slider) {
-    const min = parseInt($(slider).data(`min`)) || 0;
-    const max = parseInt($(slider).data(`max`)) || 1000;
-    const digits = max.toString().split(``).length;
-    const prefix = $(slider).data(`prefix`) || ``;
-    const suffix = $(slider).data(`suffix`) || ``;
+    const min = parseInt($(slider).data("min")) || 0;
+    const max = parseInt($(slider).data("max")) || 1000;
+    const digits = max.toString().split("").length;
+    const prefix = $(slider).data("prefix") || "";
+    const suffix = $(slider).data("suffix") || "";
     const isToggle = max === 1;
-    const isPercent = suffix === `%`;
+    const isPercent = suffix === "%";
     if (isToggle && !isPercent) {
         $(slider).after(`<input type="hidden" value="true" name="${slider.id}">`);
     } else {
@@ -934,10 +996,9 @@ function addSlider(slider) {
     const toggleTooltip = (val) => {
         if (max === 1) {
             if (isPercent) {
-                return val ? `100%` : `0%`;
-            } else {
-                return val ? `Yes` : `No`;
+                return val ? "100%" : "0%";
             }
+            return val ? "Yes" : "No";
         }
 
         return `${prefix}${Number(val).toFixed(0)}${suffix}`;
@@ -949,27 +1010,27 @@ function addSlider(slider) {
         let percentage = 0;
         for (let i = 1; i <= digits - 1; i++) {
             percentage += 100 / (digits - 1);
-            range[`${percentage}%`] = Math.pow(10, i);
+            range[`${percentage}%`] = 10 ** i;
         }
     }
 
     // eslint-disable-next-line no-undef
     noUiSlider.create(slider, {
-        "start": isToggle && !isPercent ? max : [0, max],
-        "connect": !isToggle || isPercent,
-        "behaviour": isToggle && !isPercent ? `none` : `tap`,
-        "tooltips": [{ "to": toggleTooltip }].concat(isToggle && !isPercent ? [] : [{ "to": toggleTooltip }]),
-        "step": 1,
-        "range": range
-    }).on(`update`, (values) => {
+        "start":     isToggle && !isPercent ? max : [0, max],
+        "connect":   !isToggle || isPercent,
+        "behaviour": isToggle && !isPercent ? "none" : "tap",
+        "tooltips":  [{ "to": toggleTooltip }].concat(isToggle && !isPercent ? [] : [{ "to": toggleTooltip }]),
+        "step":      1,
+        range,
+    }).on("update", (values) => {
         if (isToggle && !isPercent) {
             const value = parseInt(values[0]);
             $(`[name="${slider.id}"]`).val(Boolean(value));
 
             if (value) {
-                $(slider).addClass(`on`);
+                $(slider).addClass("on");
             } else {
-                $(slider).removeClass(`on`);
+                $(slider).removeClass("on");
             }
         } else {
             $(`[name="min${slider.id}"]`).val(Number(values[0]).toFixed(0));
@@ -978,13 +1039,14 @@ function addSlider(slider) {
     });
 
     if (isToggle && !isPercent) {
-        $(slider).find(`.noUi-connects`).click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
+        $(slider).find(".noUi-connects")
+            .click(() => slider.noUiSlider.set(parseInt(slider.noUiSlider.get()) ? 0 : 1));
     }
 }
 
 function checkSettings(settings) {
     if (!settings) {
-        settings = $(`#offer`).serializeObject();
+        settings = $("#offer").serializeObject();
     }
 
     settings = fixObjectTypes(settings);
@@ -995,31 +1057,31 @@ function checkSettings(settings) {
     }
 
     if (!settings.offering_to) {
-        alert(`Please select 1 or more trader groups you want to sent offers to.`);
+        alert("Please select 1 or more trader groups you want to sent offers to.");
         return;
     }
 
     if (!settings.want_from) {
-        alert(`Please select 1 or more tradable groups you want to ask tradables from.`);
+        alert("Please select 1 or more tradable groups you want to ask tradables from.");
         return;
     }
 
     if (!settings.type) {
-        alert(`Please select 1 or more tradable type(s) you want to ask tradables from.`);
+        alert("Please select 1 or more tradable type(s) you want to ask tradables from.");
         return;
     }
 
     if (!settings.platform) {
-        alert(`Please select 1 or more platform(s) you want to ask tradables from.`);
+        alert("Please select 1 or more platform(s) you want to ask tradables from.");
         return;
     }
 
     if (settings.message && settings.message.length > 255) {
-        alert(`Please limit your message to only 255 characters.`);
+        alert("Please limit your message to only 255 characters.");
         return;
     }
 
-    if (!confirm(`Are you sure you want to proceed? Beware that this may cause traders to add you to their ignore list!`)) {
+    if (!confirm("Are you sure you want to proceed? Beware that this may cause traders to add you to their ignore list!")) {
         return;
     }
 
@@ -1035,7 +1097,7 @@ function checkSettings(settings) {
     }
 
     if (settings.offering.length > 100) {
-        alert(`Please select 100 or less of your tradable(s) that you want to offer.`);
+        alert("Please select 100 or less of your tradable(s) that you want to offer.");
         return;
     }
 
@@ -1044,20 +1106,20 @@ function checkSettings(settings) {
 
 function logHTML(log) {
     console.log(log);
-    $(`#log`).append(`<p>${log}</p>`);
-    $(`#log`).get(0).scrollTop = $(`#log`).get(0).scrollHeight;
+    $("#log").append(`<p>${log}</p>`);
+    $("#log").get(0).scrollTop = $("#log").get(0).scrollHeight;
 }
 
 function changeAutomatedOfferStatus(i) {
-    [1, 2, 3, 4].forEach((n) => $(`#offerStatus > div:nth-child(${n})`).removeClass(`statusCurrent`));
-    $(`#offerStatus > div:nth-child(${i})`).addClass(`statusCurrent`);
+    [1, 2, 3, 4].forEach((n) => $(`#offerStatus > div:nth-child(${n})`).removeClass("statusCurrent"));
+    $(`#offerStatus > div:nth-child(${i})`).addClass("statusCurrent");
 }
 
 function calculateStupidDailyLimit(offers) {
     const unique = [];
     for (const id in offers) {
         const offer = offers[id];
-        if (offer.from_status !== `completed` || offer.to_status !== `completed`) {
+        if (offer.from_status !== "completed" || offer.to_status !== "completed") {
             continue;
         }
 
@@ -1073,7 +1135,7 @@ function calculateStupidDailyLimit(offers) {
     const recent = [];
     for (const id in offers) {
         const offer = offers[id];
-        if (offer.from_user_id === myuid && offer.created * 1000 > Date.now() - daylength && offer.to_status !== `completed` && offer.from_status !== `cancelled`) {
+        if (offer.from_user_id === myuid && offer.created * 1000 > Date.now() - daylength && offer.to_status !== "completed" && offer.from_status !== "cancelled") {
             recent.push(id);
         }
     }
@@ -1095,14 +1157,14 @@ async function sendAutomatedOffers(options) {
     }
 
     changeAutomatedOfferStatus(2);
-    $(`#offer`).replaceWith(`<div style="height: 28em; overflow: auto; border-bottom: 1px solid rgb(153, 17, 187);" id="log"></div>`);
-    showSpinner(`automatedoffers`);
+    $("#offer").replaceWith("<div style=\"height: 28em; overflow: auto; border-bottom: 1px solid rgb(153, 17, 187);\" id=\"log\"></div>");
+    showSpinner("automatedoffers");
 
     let offers = await getBarterOffers(parseInt(myuid, 16));
     let dailylimit = calculateStupidDailyLimit(offers); // barter's stupid daily offer limit
 
     if (dailylimit <= 0) {
-        logHTML(`<strong>Cancelled, because you hit/exceeded <a target="_blank" href="/u/a0/">barter.vg</a>'s daily offer limit...<br>Help him convince to remove this limit by complaining to him!</strong>`);
+        logHTML("<strong>Cancelled, because you hit/exceeded <a target=\"_blank\" href=\"/u/a0/\">barter.vg</a>'s daily offer limit...<br>Help him convince to remove this limit by complaining to him!</strong>");
         return;
     }
 
@@ -1111,11 +1173,11 @@ async function sendAutomatedOffers(options) {
         await syncLibrary().catch(alertError);
     }
 
-    logHTML(`Getting list of users that opted out for automated offers..`);
+    logHTML("Getting list of users that opted out for automated offers..");
     const optins = await getBarterAppSettings(2);
-    console.log(`optins`, optins);
+    console.log("optins", optins);
 
-    logHTML(`Getting info about the tradables you are offering...`);
+    logHTML("Getting info about the tradables you are offering...");
     const allmatches = {};
     const mytradables = {};
     const { tags, "user": { region } } = await getBarterTradables(parseInt(myuid, 16));
@@ -1127,7 +1189,7 @@ async function sendAutomatedOffers(options) {
         "30": 3,
         "31": 4,
         "34": 6,
-        "35": 5
+        "35": 5,
         // "346": region
         // "364": `PL`,
         // "376": `ROW`,
@@ -1137,12 +1199,13 @@ async function sendAutomatedOffers(options) {
     };
 
     for (const i of settings.offering) {
-        const key = i.split(`,`);
+        const key = i.split(",");
         mytradables[i] = await getBarterItemInfo(key[0]);
-        mytradables[i].regions = Object.values(tags[key[1]] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString())).map((tag) => tagregions[tag.tag_id]);
+        mytradables[i].regions = Object.values(tags[key[1]] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString()))
+            .map((tag) => tagregions[tag.tag_id]);
     }
 
-    console.log(`mytradables`, mytradables);
+    console.log("mytradables", mytradables);
     for (const key in mytradables) {
         mytradables[key].matches = new Set(); // the users that want this tradable
         const gameinfo = mytradables[key];
@@ -1173,7 +1236,8 @@ async function sendAutomatedOffers(options) {
     for (const userid in allmatches) {
         const uid = parseInt(userid);
         const offeringcount = Object.values(mytradables).filter((tradable) => tradable.matches.has(uid)).length; // the amount of tradables I can offer that user
-        const pendingusers = Object.values(offers).filter((offer) => offer.from_user_id === myuid && offer.to_status === `pending`).map((offer) => parseInt(offer.to_user_id, 16));
+        const pendingusers = Object.values(offers).filter((offer) => offer.from_user_id === myuid && offer.to_status === "pending")
+            .map((offer) => parseInt(offer.to_user_id, 16));
 
         // if I can't offer enough (according to my options)
         // or if I exceed the user's max items per offer setting
@@ -1194,15 +1258,15 @@ async function sendAutomatedOffers(options) {
 
     const matchedcount = Object.keys(allmatches).length;
     logHTML(`Found ${matchedcount} matching traders!`);
-    console.log(`allmatches`, allmatches);
+    console.log("allmatches", allmatches);
     if (matchedcount === 0) {
-        logHTML(`Done!`);
+        logHTML("Done!");
         changeAutomatedOfferStatus(4);
-        hideSpinner(`automatedoffers`);
+        hideSpinner("automatedoffers");
         return;
     }
 
-    logHTML(`Limiting traders that have tradables you want, according to your preferences...${matchedcount > 100 ? `<br><strong>This may take several minutes</strong>` : ``}`);
+    logHTML(`Limiting traders that have tradables you want, according to your preferences...${matchedcount > 100 ? "<br><strong>This may take several minutes</strong>" : ""}`);
     for (const userid in allmatches) { // gonna filter out the matches that have no tradables that interest me
         const uid = parseInt(userid);
 
@@ -1233,14 +1297,16 @@ async function sendAutomatedOffers(options) {
             continue;
         }
 
-        const no_offers_items = theirtradables.tags && Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369).map((tag) => tag.line_id) : [];
+        const no_offers_items = theirtradables.tags && Object.keys(theirtradables.tags).length > 0 ? Object.values(Object.assign(...Object.values(theirtradables.tags))).filter((tag) => tag.tag_id === 369)
+            .map((tag) => tag.line_id) : [];
         const limited_items = theirtradables.steam_limited;
 
         for (const platformid in theirtradables.by_platform) {
             const tradables = theirtradables.by_platform[platformid];
             for (const line_id in tradables) {
                 const tradable = tradables[line_id];
-                tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString())).map((tag) => tagregions[tag.tag_id]);
+                tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString()))
+                    .map((tag) => tagregions[tag.tag_id]);
                 if (passesMyPreferences(tradable, settings, want_items, no_offers_items, limited_items, region)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
@@ -1260,9 +1326,9 @@ async function sendAutomatedOffers(options) {
     logHTML(`Found ${matchescount} matching traders!`);
 
     if (matchescount < settings.minlimit) {
-        logHTML(`Not enough matches found. Done!`);
+        logHTML("Not enough matches found. Done!");
         changeAutomatedOfferStatus(4);
-        hideSpinner(`automatedoffers`);
+        hideSpinner("automatedoffers");
         return;
     }
 
@@ -1275,7 +1341,7 @@ async function sendAutomatedOffers(options) {
     const matches = shuffle(Object.keys(allmatches)).slice(0, max); // the users to send the automated offers to
     for (const userid of matches) {
         if (sent === dailylimit) {
-            const daylength = 24 * 60 * 60 * 1000 + 10000; // 24h + 10 seconds
+            const daylength = (24 * 60 * 60 * 1000) + 10000; // 24h + 10 seconds
             const endtime = Date.now() + daylength;
             const countdown = setInterval(() => {
                 const distance = endtime - Date.now();
@@ -1290,7 +1356,7 @@ async function sendAutomatedOffers(options) {
                 const minutes = Math.floor(distance % (1000 * 60 * 60) / (1000 * 60));
                 const seconds = Math.floor(distance % (1000 * 60) / 1000);
 
-                $(`.countdown`).html(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+                $(".countdown").html(`${days}d ${hours}h ${minutes}m ${seconds}s`);
             }, 1000);
 
             logHTML(`<strong>Now we have to wait <i class="countdown"></i> before sending the remaining ${matches.length - failed - sent} offers, because <a target="_blank" href="/u/a0/">barter.vg</a> thinks this limit is neccesary...<br>Help him change his mind by complaining to him!</strong>`);
@@ -1306,44 +1372,45 @@ async function sendAutomatedOffers(options) {
         const ato2 = shuffle([...allmatches[uid].want]).splice(0, allmatches[uid].max_items_per_offer || 100);
 
         const offer = await sendBarterOffer({
-            "to": uid,
-            "from_and_or": settings.from_ratio === ato1.length ? 0 : settings.from_ratio,
-            "to_and_or": settings.to_ratio === ato2.length ? 0 : settings.to_ratio,
-            "expire": Math.max(allmatches[uid].expire_min_from || 1, settings.expire_days),
-            "counter_preference": settings.counter_preference,
+            "to":                  uid,
+            "from_and_or":         settings.from_ratio === ato1.length ? 0 : settings.from_ratio,
+            "to_and_or":           settings.to_ratio === ato2.length ? 0 : settings.to_ratio,
+            "expire":              Math.max(allmatches[uid].expire_min_from || 1, settings.expire_days),
+            "counter_preference":  settings.counter_preference,
             "add_to_offer_from[]": ato1,
-            "add_to_offer_to[]": ato2,
+            "add_to_offer_to[]":   ato2,
             // "settings": JSON.stringify(settings),
-            "message": settings.message || ``
+            "message":             settings.message || "",
         }).catch((err) => {
             failed++;
-            logHTML(`<strong>Failed to send automated offer to <a target="_blank" href="/u/${uid.toString(16)}/">${allmatches[uid].steam_persona}</a></strong> (${(sent)}/${max} sent${failed > 0 ? `, ${failed} failed` : ``})`);
+            logHTML(`<strong>Failed to send automated offer to <a target="_blank" href="/u/${uid.toString(16)}/">${allmatches[uid].steam_persona}</a></strong> (${sent}/${max} sent${failed > 0 ? `, ${failed} failed` : ""})`);
             console.log(err);
         });
 
         if (offer) {
             sent++;
-            logHTML(`Successfully sent automated <a target="_blank" href="/u/${myuid}/o/${offer.offer_id}/">offer</a> to <a target="_blank" href="/u/${uid.toString(16)}/">${allmatches[uid].steam_persona}</a> (${(sent)}/${max} sent${failed > 0 ? `, ${failed} failed` : ``})`);
+            logHTML(`Successfully sent automated <a target="_blank" href="/u/${myuid}/o/${offer.offer_id}/">offer</a> to <a target="_blank" href="/u/${uid.toString(16)}/">${allmatches[uid].steam_persona}</a> (${sent}/${max} sent${failed > 0 ? `, ${failed} failed` : ""})`);
         }
     }
 
-    logHTML(`Done!`);
+    logHTML("Done!");
     changeAutomatedOfferStatus(4);
-    hideSpinner(`automatedoffers`);
+    hideSpinner("automatedoffers");
 }
 
 function getBarterOffers(uid) {
     return new Promise(async(res, rej) => {
         const response = await request({
-            "method": `GET`,
-            "url": `https://barter.vg/u/${uid.toString(16)}/o/json/`
+            "method": "GET",
+            "url":    `https://barter.vg/u/${uid.toString(16)}/o/json/`,
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         delete json[0]; // metadata
@@ -1354,15 +1421,16 @@ function getBarterOffers(uid) {
 function getBarterTradables(uid) {
     return new Promise(async(res, rej) => {
         const response = await request({
-            "method": `GET`,
-            "url": `https://barter.vg/u/${uid.toString(16)}/t/json/`
+            "method": "GET",
+            "url":    `https://barter.vg/u/${uid.toString(16)}/t/json/`,
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         res(json);
@@ -1372,15 +1440,16 @@ function getBarterTradables(uid) {
 function getFilteredTradables(uid) {
     return new Promise(async(res, rej) => {
         const response = await request({
-            "method": `GET`,
-            "url": `https://barter.vg/u/${uid.toString(16)}/t/f/${myuid}/json/`
+            "method": "GET",
+            "url":    `https://barter.vg/u/${uid.toString(16)}/t/f/${myuid}/json/`,
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         res(json);
@@ -1390,15 +1459,16 @@ function getFilteredTradables(uid) {
 function getBarterItemInfo(itemid) {
     return new Promise(async(res, rej) => {
         const response = await request({
-            "method": `GET`,
-            "url": `https://barter.vg/i/${itemid}/json2/`
+            "method": "GET",
+            "url":    `https://barter.vg/i/${itemid}/json2/`,
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         res(json);
@@ -1408,15 +1478,16 @@ function getBarterItemInfo(itemid) {
 function getBarterAppSettings(appid) {
     return new Promise(async(res, rej) => {
         const response = await request({
-            "method": `GET`,
-            "url": `https://barter.vg/app/${appid}/settings/`
+            "method": "GET",
+            "url":    `https://barter.vg/app/${appid}/settings/`,
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         res(json);
@@ -1425,25 +1496,24 @@ function getBarterAppSettings(appid) {
 
 function sendBarterOffer(options) {
     return new Promise(async(res, rej) => {
-        console.log(`options`, options);
+        console.log("options", options);
         const response = await request({
-            "url": `https://barter.vg/u/${myuid}/o/json/`,
-            "method": `POST`,
-            "headers": {
-                "Content-Type": `application/x-www-form-urlencoded`
-            },
-            "data": $.param({
-                "app_id": 2,
+            "url":     `https://barter.vg/u/${myuid}/o/json/`,
+            "method":  "POST",
+            "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+            "data":    $.param({
+                "app_id":      2,
                 "app_version": versionToInteger(GM_info.script.version),
-                ...options
-            })
+                ...options,
+            }),
         }).catch(rej);
 
         let json;
         try {
             json = JSON.parse(response.responseText);
         } catch (e) {
-            rej({ "error": e, "data": response });
+            e.data = response;
+            rej(e);
         }
 
         res(json);
@@ -1456,17 +1526,14 @@ function delay(ms) {
 
 async function jqueryPost(url, data, callback) {
     const response = await request({
-        "url": url,
-        "method": `POST`,
-        "headers": {
-            "Content-Type": `application/x-www-form-urlencoded`
-        },
-        "data": $.param(data)
+        url,
+        "method":  "POST",
+        "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+        "data":    $.param(data),
     }).catch(callback);
 
     if (response && callback) {
         callback(response.responseText);
-        return;
     }
 }
 
@@ -1476,13 +1543,14 @@ function request(options) {
         return;
     }
 
+    let error = new Error("HTTP Error");
     return new Promise((res, rej) => GM_xmlhttpRequest({
-        "timeout": 240000,
+        "timeout":   240000,
         ...options,
-        "onload": res,
-        "onerror": (...params) => rej({ "reason": `error`, params }),
-        "ontimeout": (...params) => rej({ "reason": `timeout`, params }),
-        "onabort": (...params) => rej({ "reason": `abort`, params })
+        "onload":    res,
+        "onerror":   (...params) => { error.params = params; rej(error); },
+        "ontimeout": (...params) => { error.params = params; rej(error); },
+        "onabort":   (...params) => { error.params = params; rej(error); },
     }));
 }
 
@@ -1498,27 +1566,27 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && game.hasOwnProperty(`extra`)) { // Number of copies
+    if (pass && game.hasOwnProperty("extra")) { // Number of copies
         pass = pass && game.extra > 0;
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`type`)) {
+    if (pass && game.hasOwnProperty("item_type") && settings.hasOwnProperty("type")) {
         pass = pass && settings.type.includes(game.item_type.toLowerCase());
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && game.hasOwnProperty(`item_type`) && settings.hasOwnProperty(`minDLC`) && settings.hasOwnProperty(`maxDLC`)) {
+    if (pass && game.hasOwnProperty("item_type") && settings.hasOwnProperty("minDLC") && settings.hasOwnProperty("maxDLC")) {
         if (settings.minDLC === 0 && settings.maxDLC === 0) {
-            pass = pass && game.item_type.toLowerCase() !== `dlc`;
+            pass = pass && game.item_type.toLowerCase() !== "dlc";
         }
         if (settings.minDLC === 1 && settings.maxDLC === 1) {
-            pass = pass && game.item_type.toLowerCase() === `dlc`;
+            pass = pass && game.item_type.toLowerCase() === "dlc";
         }
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minlimited`) && settings.hasOwnProperty(`maxlimited`)) {
+    if (pass && settings.hasOwnProperty("minlimited") && settings.hasOwnProperty("maxlimited")) {
         if (settings.minlimited === 0 && settings.maxlimited === 0) {
             pass = pass && !limited_items.includes(game.item_id);
         }
@@ -1528,7 +1596,7 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`mingivenaway`) && settings.hasOwnProperty(`maxgivenaway`)) {
+    if (pass && settings.hasOwnProperty("mingivenaway") && settings.hasOwnProperty("maxgivenaway")) {
         if (settings.mingivenaway === 0 && settings.maxgivenaway === 0) {
             pass = pass && (game.givenaway || 0) === 0;
         }
@@ -1538,52 +1606,52 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minbundles`) && settings.hasOwnProperty(`maxbundles`)) {
+    if (pass && settings.hasOwnProperty("minbundles") && settings.hasOwnProperty("maxbundles")) {
         pass = pass && inRange(settings.minbundles, settings.maxbundles, game.bundles_all || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`mincards`) && settings.hasOwnProperty(`maxcards`)) {
+    if (pass && settings.hasOwnProperty("mincards") && settings.hasOwnProperty("maxcards")) {
         pass = pass && inRange(settings.mincards, settings.maxcards, game.cards || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minachievements`) && settings.hasOwnProperty(`maxachievements`)) {
+    if (pass && settings.hasOwnProperty("minachievements") && settings.hasOwnProperty("maxachievements")) {
         pass = pass && inRange(settings.minachievements, settings.maxachievements, game.achievements || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minreviews`) && settings.hasOwnProperty(`maxreviews`)) {
+    if (pass && settings.hasOwnProperty("minreviews") && settings.hasOwnProperty("maxreviews")) {
         pass = pass && inRange(settings.minreviews, settings.maxreviews, game.reviews_total || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minscores`) && settings.hasOwnProperty(`maxscores`)) {
+    if (pass && settings.hasOwnProperty("minscores") && settings.hasOwnProperty("maxscores")) {
         pass = pass && inRange(settings.minscores, settings.maxscores, game.reviews_positive || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minprice`) && settings.hasOwnProperty(`maxprice`)) {
+    if (pass && settings.hasOwnProperty("minprice") && settings.hasOwnProperty("maxprice")) {
         pass = pass && inRange(settings.minprice, settings.maxprice, (game.price || 0) / 100);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minyear`) && settings.hasOwnProperty(`maxyear`)) {
+    if (pass && settings.hasOwnProperty("minyear") && settings.hasOwnProperty("maxyear")) {
         pass = pass && inRange(settings.minyear, settings.maxyear, game.release_year || 1950);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minwishlist`) && settings.hasOwnProperty(`maxwishlist`)) {
+    if (pass && settings.hasOwnProperty("minwishlist") && settings.hasOwnProperty("maxwishlist")) {
         pass = pass && inRange(settings.minwishlist, settings.maxwishlist, game.wishlist || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`minlibrary`) && settings.hasOwnProperty(`maxlibrary`)) {
+    if (pass && settings.hasOwnProperty("minlibrary") && settings.hasOwnProperty("maxlibrary")) {
         pass = pass && inRange(settings.minlibrary, settings.maxlibrary, game.library || 0);
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && settings.hasOwnProperty(`mintradables`) && settings.hasOwnProperty(`maxtradables`)) {
+    if (pass && settings.hasOwnProperty("mintradables") && settings.hasOwnProperty("maxtradables")) {
         pass = pass && inRange(settings.mintradables, settings.maxtradables, game.tradable || 0);
     }
     // console.log(game.title, pass, new Error);
@@ -1595,81 +1663,85 @@ function passesTheirPreferences(game, user, optins, group, offeringcount) { // g
     const my_user_id = parseInt(myuid, 16);
     let pass = user.region && game.regions && game.regions.length > 0 ? game.regions.includes(user.region) : true;
 
-    if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(`global`) && optins.global.hasOwnProperty(user.user_id)) {
-        pass = pass && optins.global[user.user_id];
+    if (optins.hasOwnProperty("global") || optins.hasOwnProperty("0")) { // for future support, not yet implemented in API (#6)
+        if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty("global") && optins.global.hasOwnProperty(user.user_id)) {
+            pass = pass && optins.global[user.user_id];
+        }
+
+        if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty(user.user_id)) {
+            pass = pass && optins[user.user_id][my_user_id];
+        }
+    } else if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty(user.user_id)) {
+        pass = pass && optins[user.user_id];
     }
 
-    if (pass && user.hasOwnProperty(`user_id`) && optins.hasOwnProperty(user.user_id)) {
-        pass = pass && optins[user.user_id][my_user_id];
-    }
-
-    if (pass && user.hasOwnProperty(`wants_unowned`)) {
+    if (pass && user.hasOwnProperty("wants_unowned")) {
         if (user.wants_unowned === 0) {
-            pass = pass && group === `wishlist`;
+            pass = pass && group === "wishlist";
         } else if (user.wants_unowned === 1) {
-            pass = pass && (group === `wishlist` || group === `unowned`);
+            pass = pass && (group === "wishlist" || group === "unowned");
         }
     }
 
-    if (pass && user.hasOwnProperty(`wants_library`)) {
+    if (pass && user.hasOwnProperty("wants_library")) {
         if (user.wants_library === 0) {
-            pass = pass && group !== `library`;
+            pass = pass && group !== "library";
         }
     }
 
-    if (pass && user.hasOwnProperty(`wants_tradable`)) {
+    if (pass && user.hasOwnProperty("wants_tradable")) {
         if (user.wants_tradable === 0) {
-            pass = pass && group !== `tradable`;
+            pass = pass && group !== "tradable";
         }
     }
 
-    if (pass && user.hasOwnProperty(`wants_cards`) && user.wants_cards === 1) {
+    if (pass && user.hasOwnProperty("wants_cards") && user.wants_cards === 1) {
         pass = pass && (game.cards || 0) > 0 && (game.cards_marketable || 0) === 1;
     }
 
-    if (pass && user.hasOwnProperty(`wants_achievements`) && user.wants_achievements === 1) {
+    if (pass && user.hasOwnProperty("wants_achievements") && user.wants_achievements === 1) {
         pass = pass && (game.achievements || 0) > 0;
     }
 
-    if (pass && user.hasOwnProperty(`avoid_givenaway`) && user.avoid_givenaway === 1) {
+    if (pass && user.hasOwnProperty("avoid_givenaway") && user.avoid_givenaway === 1) {
         pass = pass && (game.giveaway_count || 0) === 0;
     }
 
-    if (pass && user.hasOwnProperty(`avoid_bundles`) && user.avoid_bundles === 1) {
+    if (pass && user.hasOwnProperty("avoid_bundles") && user.avoid_bundles === 1) {
         pass = pass && (game.bundles_available || 0) === 0;
     }
 
-    if (pass && game.hasOwnProperty(`user_reviews_positive`) && user.hasOwnProperty(`wants_rating`) && game.user_reviews_positive >= 0) {
+    if (pass && game.hasOwnProperty("user_reviews_positive") && user.hasOwnProperty("wants_rating") && game.user_reviews_positive >= 0) {
         pass = pass && user.wants_rating <= game.user_reviews_positive;
     }
 
-    if (pass && user.hasOwnProperty(`max_items_per_offer`)) {
+    if (pass && user.hasOwnProperty("max_items_per_offer")) {
         pass = pass && user.max_items_per_offer >= offeringcount;
     }
 
-    if (pass && game.hasOwnProperty(`source_id`) && user.hasOwnProperty(`wants_steam_only`) && user.wants_steam_only === 1) {
+    if (pass && game.hasOwnProperty("source_id") && user.hasOwnProperty("wants_steam_only") && user.wants_steam_only === 1) {
         pass = pass && (game.source_id === 1 || game.source_id === 2);
     }
 
-    if (pass && game.hasOwnProperty(`item_type`) && user.hasOwnProperty(`avoid_dlc`) && user.avoid_dlc === 1) {
-        pass = pass && game.item_type.toLowerCase() !== `dlc`;
+    if (pass && game.hasOwnProperty("item_type") && user.hasOwnProperty("avoid_dlc") && user.avoid_dlc === 1) {
+        pass = pass && game.item_type.toLowerCase() !== "dlc";
     }
 
-    if (user.hasOwnProperty(`windows`) && user.windows === 1 && user.hasOwnProperty(`mac`) && user.mac === 1 && user.hasOwnProperty(`linux`) && user.linux === 1) { // workaround
+    if (user.hasOwnProperty("windows") && user.windows === 1 && user.hasOwnProperty("mac") && user.mac === 1 && user.hasOwnProperty("linux") && user.linux === 1) { // workaround
         user.windows = 0;
         user.mac = 0;
         user.linux = 0;
     }
 
-    if (pass && game.hasOwnProperty(`windows`) && user.hasOwnProperty(`windows`) && user.windows === 1) {
+    if (pass && game.hasOwnProperty("windows") && user.hasOwnProperty("windows") && user.windows === 1) {
         pass = pass && game.windows === 1;
     }
 
-    if (pass && game.hasOwnProperty(`mac`) && user.hasOwnProperty(`mac`) && user.mac === 1) {
+    if (pass && game.hasOwnProperty("mac") && user.hasOwnProperty("mac") && user.mac === 1) {
         pass = pass && game.mac === 1;
     }
 
-    if (pass && game.hasOwnProperty(`linux`) && user.hasOwnProperty(`linux`) && user.linux === 1) {
+    if (pass && game.hasOwnProperty("linux") && user.hasOwnProperty("linux") && user.linux === 1) {
         pass = pass && game.linux === 1;
     }
 
@@ -1681,11 +1753,11 @@ function fixObjectTypes(obj) {
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
             const val = obj[key];
-            if (val === `true`) {
+            if (val === "true") {
                 obj[key] = true;
-            } else if (val === `false`) {
+            } else if (val === "false") {
                 obj[key] = false;
-            } else if (val === ``) {
+            } else if (val === "") {
                 delete obj[key];
             } else if (isFinite(val)) {
                 obj[key] = Number(val);
@@ -1697,97 +1769,110 @@ function fixObjectTypes(obj) {
 
 function filterRows(event) {
     const val = event.target.value.toLowerCase();
-    $(`tbody tr:not(.platform)`).get().forEach((elem) => {
-        if ($(elem).text().toLowerCase().includes(val)) {
-            $(elem).show();
-        } else {
-            $(elem).hide();
-        }
-    });
+    $("tbody tr:not(.platform)").get()
+        .forEach((elem) => {
+            if ($(elem).text()
+                .toLowerCase()
+                .includes(val)) {
+                $(elem).show();
+            } else {
+                $(elem).hide();
+            }
+        });
 }
 
 function searchOffers(event) {
     const val = event.target.value.toLowerCase();
-    $(`#offers tr:has(abbr)`).get().forEach((elem) => {
-        if ($(elem).text().toLowerCase().includes(val)) {
-            $(elem).show();
-        } else {
-            $(elem).hide();
-        }
-    });
+    $("#offers tr:has(abbr)").get()
+        .forEach((elem) => {
+            if ($(elem).text()
+                .toLowerCase()
+                .includes(val)) {
+                $(elem).show();
+            } else {
+                $(elem).hide();
+            }
+        });
 
-    $(`#offers tr.commentPreview`).get().forEach((elem) => {
-        if ($(elem).prev().is(`:hidden`)) {
-            $(elem).hide();
-        } else {
-            $(elem).show();
-        }
-    });
+    $("#offers tr.commentPreview").get()
+        .forEach((elem) => {
+            if ($(elem).prev()
+                .is(":hidden")) {
+                $(elem).hide();
+            } else {
+                $(elem).show();
+            }
+        });
 }
 
 function messageOffers(event) {
     event.preventDefault();
 
-    const message = prompt(`Message:`);
+    const message = prompt("Message:");
 
     if (!message) {
         return;
     }
 
-    $(`#offers tr:visible:has(abbr)`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
-        "offer_message": message,
-        "offer_setup": 3
-    }, () => $(elem).find(`*`).css(`color`, `green`)));
+    $("#offers tr:visible:has(abbr)").get()
+        .forEach((elem) => $.post($("a.textColor", elem).attr("href"), {
+            "offer_message": message,
+            "offer_setup":   3,
+        }, () => $(elem).find("*")
+            .css("color", "green")));
 }
 
 function cancelOffers(event) {
     event.preventDefault();
 
-    if (!confirm(`Are you sure you want to cancel all trade offers displayed below?`)) {
+    if (!confirm("Are you sure you want to cancel all trade offers displayed below?")) {
         return;
     }
 
-    $(`#offers tr:visible:has(abbr)`).get().forEach((elem) => $.post($(`a.textColor`, elem).attr(`href`), {
-        "offer_setup": 3,
-        "cancel_offer": `☒ Cancel Offer`
-    }, () => $(elem).remove()));
+    $("#offers tr:visible:has(abbr)").get()
+        .forEach((elem) => $.post($("a.textColor", elem).attr("href"), {
+            "offer_setup":  3,
+            "cancel_offer": "☒ Cancel Offer",
+        }, () => $(elem).remove()));
 }
 
 function extendExpiry(event) {
     event.preventDefault();
-    const expire_days = parseInt(prompt(`Expiration:`, `15`));
+    const expire_days = parseInt(prompt("Expiration:", "15"));
     if (isNaN(expire_days)) {
         return;
     }
 
-    $(`#offers tr:visible`).get().forEach((elem) => {
-        const url = $(`a.textColor`, elem).attr(`href`);
-        $.post(url, {
-            "offer_setup": 3,
-            "edit_offer": `✐ Edit Offer`
-        }, (data) => {
-            data = data.replace(/src="[^"]*"/ig, ``);
-            const formdata = $(`#offer`, data).serializeObject();
-            formdata.expire_days = expire_days;
-            formdata.propose_offer = `Finish and Propose Offer`;
-            $.post(url, formdata, () => $(elem).find(`*`).css(`color`, `green`));
+    $("#offers tr:visible").get()
+        .forEach((elem) => {
+            const url = $("a.textColor", elem).attr("href");
+            $.post(url, {
+                "offer_setup": 3,
+                "edit_offer":  "✐ Edit Offer",
+            }, (data) => {
+                data = data.replace(/src="[^"]*"/ig, "");
+                const formdata = $("#offer", data).serializeObject();
+                formdata.expire_days = expire_days;
+                formdata.propose_offer = "Finish and Propose Offer";
+                $.post(url, formdata, () => $(elem).find("*")
+                    .css("color", "green"));
+            });
         });
-    });
 }
 
 function ajaxify() {
     return; // disabled for now
     // eslint-disable-next-line no-unreachable
-    $(`form:not([target='_blank'], [onsubmit])`).submit(formSubmitted);
-    $(`button[name], [type=submit]:not([target='_blank'], [onsubmit])`).click(submitClicked);
+    $("form:not([target='_blank'], [onsubmit])").submit(formSubmitted);
+    $("button[name], [type=submit]:not([target='_blank'], [onsubmit])").click(submitClicked);
 }
 
 function submitClicked(event) {
-    if ($(event.target).parents(`form`).length > 0) {
-        $(`[type=submit]`, $(event.target).parents(`form`)).removeAttr(`clicked`);
-        $(event.target).attr(`clicked`, `true`);
+    if ($(event.target).parents("form").length > 0) {
+        $("[type=submit]", $(event.target).parents("form")).removeAttr("clicked");
+        $(event.target).attr("clicked", "true");
     } else {
-        $(`form`).off(`submit`, formSubmitted);
+        $("form").off("submit", formSubmitted);
     }
 }
 
@@ -1795,23 +1880,23 @@ function formSubmitted(event) {
     event.preventDefault();
 
     const form = event.target;
-    const submit = $(`[clicked=true]`, form);
-    const action = submit.is(`[formaction]`) ? submit.attr(`formaction`) : $(form).attr(`action`);
-    const method = $(form).attr(`method`) || `POST`;
+    const submit = $("[clicked=true]", form);
+    const action = submit.is("[formaction]") ? submit.attr("formaction") : $(form).attr("action");
+    const method = $(form).attr("method") || "POST";
     const data = $(form).serializeObject();
     const xhr = new XMLHttpRequest();
 
-    if (submit.attr(`name`)) {
-        data[submit.attr(`name`)] = submit.attr(`value`) || ``;
+    if (submit.attr("name")) {
+        data[submit.attr("name")] = submit.attr("value") || "";
     }
-    submit.css(`cursor`, `not-allowed`).prop(`disabled`, true);
+    submit.css("cursor", "not-allowed").prop("disabled", true);
 
     $.ajax({
-        "url": action,
-        "method": method,
-        "data": data,
-        "xhr": () => xhr,
-        "success": parseHtml
+        "url":     action,
+        method,
+        data,
+        "xhr":     () => xhr,
+        "success": parseHtml,
     });
 }
 
@@ -1828,22 +1913,22 @@ function serializeObject() {
     const o = {};
     const a = this.serializeArray();
     a.forEach((elem) => {
-        if (o[elem.name] !== undefined) {
+        if (o[elem.name] === undefined) {
+            o[elem.name] = elem.value || "";
+        } else {
             if (!o[elem.name].push) {
                 o[elem.name] = [o[elem.name]];
             }
-            o[elem.name].push(elem.value || ``);
-        } else {
-            o[elem.name] = elem.value || ``;
+            o[elem.name].push(elem.value || "");
         }
     });
     return o;
 }
 
 function shuffle(array) {
-    let currentIndex = array.length,
-        temporaryValue, randomIndex;
-    while (0 !== currentIndex) {
+    let currentIndex = array.length;
+    let temporaryValue; let randomIndex;
+    while (currentIndex !== 0) {
         randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex -= 1;
         temporaryValue = array[currentIndex];
@@ -1860,9 +1945,10 @@ function inRange(num1, num2, numTest) {
 
 function versionToInteger(ver) {
     let i = 0;
-    ver.split(`.`).reverse().forEach((n, index) => {
-        i += parseInt(n) * Math.pow(10, 2 * index);
-    });
+    ver.split(".").reverse()
+        .forEach((n, index) => {
+            i += parseInt(n) * (10 ** (2 * index));
+        });
     return i;
 }
 
