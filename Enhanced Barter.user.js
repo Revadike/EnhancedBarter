@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.3
+// @version      1.2.4
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -95,7 +95,7 @@ function barterReady() {
     </li>`);
 
     $(".sortBy").after(`<div id="filtercontainer">
-        <span class="activityIcon normal gray">¶</span> Filter by 
+        <span class="activityIcon normal gray">¶</span> Filter by
         <input id="filterBy" type="text" placeholder="Search in displayed rows..." style="width: 530px;">
     </div>`);
     $("#filtercontainer").attr("class", $(".sortBy").attr("class"));
@@ -910,7 +910,7 @@ function setupAutomatedOffer() {
                 <li><input type="checkbox" name="platform" id="keyjoker" value="158"><label for="keyjoker">KeyJoker</label></li>
                 <li><input type="checkbox" name="platform" id="devsource" value="159"><label for="devsource">From Dev / Pub</label></li>
                 <li><input type="checkbox" name="platform" id="blank" value="160"><label for="blank">WeGame X</label></li>
-                <li><input type="checkbox" name="platform" id="blank" value="161"><label for="blank">Indie Face Kick</label></li>            
+                <li><input type="checkbox" name="platform" id="blank" value="161"><label for="blank">Indie Face Kick</label></li>
             </ul>
         </div>`);
 
@@ -1671,8 +1671,8 @@ function passesTheirPreferences(game, user, optins, group, offeringcount) { // g
         if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty(user.user_id)) {
             pass = pass && optins[user.user_id][my_user_id];
         }
-    } else if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty(user.user_id)) {
-        pass = pass && optins[user.user_id];
+    } else if (pass && user.hasOwnProperty("steam_id64_string") && optins.hasOwnProperty(user.steam_id64_string)) {
+        pass = pass && optins[user.steam_id64_string];
     }
 
     if (pass && user.hasOwnProperty("wants_unowned")) {
