@@ -3,17 +3,20 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.2.4
+// @version      1.3.0
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
+// @connect      steam-tracker.com
 // @connect      steamcommunity.com
 // @connect      steamtrades.com
 // @connect      store.steampowered.com
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
+// @grant        GM_getValue
 // @grant        GM_info
 // @grant        GM_setClipboard
+// @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @run-at       document-start
@@ -48,7 +51,6 @@
 
 const requests = [];
 const requestRateLimit = 200;
-const { localStorage } = unsafeWindow;
 let myuid, mysid, streps, usergroups, itemnames;
 
 function init() {
@@ -77,6 +79,7 @@ function initBarter() {
 
     unsafeWindow.$ = $;
     unsafeWindow.syncLibrary = syncLibrary;
+    unsafeWindow.sendAutomatedOffers = sendAutomatedOffers;
     $(document).ready(barterReady);
 }
 
@@ -88,7 +91,7 @@ function barterReady() {
     GM_addStyle(GM_getResourceText("noUiSliderCss"));
     GM_addStyle(stylesheet);
 
-    $("li.bottomline").after(`<li class="bottomline" title="${GM_info.script.name} (${GM_info.script.version}) by ${GM_info.script.author}">
+    $("#bc li.collapse:last").before(`<li class="collapse" title="${GM_info.script.name} (${GM_info.script.version}) by ${GM_info.script.author}">
         <a target="_blank" href="https://github.com/Revadike/EnhancedBarter/">
             <span>&#129302;&#xFE0E;</span>${GM_info.script.name}
         </a>
@@ -101,16 +104,16 @@ function barterReady() {
     $("#filtercontainer").attr("class", $(".sortBy").attr("class"));
     $("#filterBy").on("change keyup paste", filterRows);
 
-    streps = JSON.parse(localStorage.stReps || "{}");
+    streps = GM_getValue("stReps", {});
     $("a:has(>[alt=\"Steam Trades icon\"])").get()
         .forEach(addSteamTradesRep);
 
     if ($("#q").length > 0) {
-        itemnames = JSON.parse(localStorage.itemnames || "{}");
+        itemnames = GM_getValue("itemnames", {});
         addAutoComplete();
     }
 
-    usergroups = JSON.parse(localStorage.usergroups || "{}");
+    usergroups = GM_getValue("usergroups", {});
 
     // The match page and user profile page
     $("#tradeUser [label=Groups] option, [name=group] option").get()
@@ -256,7 +259,7 @@ function barterReady() {
             const id = $("[name=groupid]").val();
             const name = $("[name=groupname]").val();
             usergroups[id] = name;
-            localStorage.usergroups = JSON.stringify(usergroups);
+            GM_setValue("usergroups", usergroups);
         });
 
         $("[name=groupid]").change((event) => {
@@ -279,18 +282,23 @@ function barterReady() {
                 <strong>Filter: </strong>
             </label>
             <input class="addTo pborder" id="offersearch" type="text" placeholder="Search in displayed offers..." style="width: 210px;">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="button" onsubmit="void(0)" value="Cancel Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="button" onsubmit="void(0)" value="Message Offers">
-            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="button" onsubmit="void(0)" value="Change Expiration">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="removeowned" type="button" onsubmit="void(0)" value="Purge Owned">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="canceloffers" type="button" onsubmit="void(0)" value="Cancel">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="messageoffers" type="button" onsubmit="void(0)" value="Message">
+            <input class="addTo pborder" style="float: right; margin-left: 4px;" id="extendoffers" type="button" onsubmit="void(0)" value="Expiration">
+            <strong style="float: right; margin-left: 4px;">Mass: </strong>
         </p>`);
 
         $("#canceloffers").click(cancelOffers);
         $("#messageoffers").click(messageOffers);
         $("#extendoffers").click(extendExpiry);
+        $("#removeowned").click(removeOwned);
         $("#offersearch").on("change keyup paste", searchOffers);
     }
 
     // The accepted offer page
+    $("input[value='Completed Offer']").before("<input type=\"checkbox\" id=\"finalizeOfferCheck\"> Comprehensive offer completion");
+    $("#finalizeOfferCheck").prop("checked", GM_getValue("finalizeOffer", true));
     $("input[value='Completed Offer']").click(finalizeOffer);
 }
 
@@ -392,7 +400,7 @@ function addSteamTradesRep(elem) {
             }
 
             streps[steamid].t = Date.now();
-            localStorage.stReps = JSON.stringify(streps);
+            GM_setValue("stReps", streps);
             $(elem).after(createRep(streps[steamid]));
         },
     });
@@ -461,7 +469,7 @@ function addAutoComplete() {
     //             }
 
     //             itemnames.lastupdated = Date.now();
-    //             localStorage.itemnames = JSON.stringify(itemnames);
+    //             GM_setValue("itemnames", itemnames);
     //             addAutoComplete();
     //         }
     //     });
@@ -485,6 +493,12 @@ function handleRequests() {
 
 function finalizeOffer(event) {
     event.preventDefault();
+
+    const check = $("#finalizeOfferCheck").prop("checked");
+    GM_setValue("finalizeOffer", check);
+    if (!check) {
+        return;
+    }
 
     const main = $(event.target).parents("#main");
     const steamid = $("#offerHeader [alt=\"Steam icon\"]", main).get()
@@ -597,7 +611,33 @@ function setPostTradeClipboard(url) {
     GM_setClipboard(msg);
 }
 
+function addShiftCheck() {
+    window.checkKey = null;
+    document.querySelectorAll("input[type=checkbox]").forEach((a, f, e) => {
+        a.addEventListener("click", (c) => {
+            let g = window.checkKey;
+            window.checkKey = f;
+
+            if (g !== null && c.shiftKey) {
+                let h = e[g].checked;
+                let j = [...e].slice(Math.min(f, g), Math.max(f, g) + 1);
+                j.forEach((elem) => {
+                    elem.checked = h;
+                });
+
+                let elem = document.querySelector("#selectCount");
+                if (elem) {
+                    let k = Number(elem.innerHTML);
+                    let d = j.length - 2;
+                    elem.innerHTML = h ? k + d : k - d;
+                }
+            }
+        }, false);
+    });
+}
+
 function setupAutomatedOffer() {
+    $("#automatedoffer").text("Loading...");
     $.post(`/u/${myuid}/o/`, {
         "to_user_id":  -2,
         "offer_setup": 1,
@@ -608,6 +648,7 @@ function setupAutomatedOffer() {
         });
 
         parseHtml(data);
+
         $("#main h2").html("&#x1F916;&#xFE0E;✉ Automated Offers");
         $("#offerHeaderTo").html("To <strong>Qualified Users</strong> (select options below)");
         $("#offerHeaderTo").parent()
@@ -728,6 +769,10 @@ function setupAutomatedOffer() {
             Release year (<a style="cursor: help; text-decoration: none;" title="The release year range of the game.">?</a>)
         </fieldset>
         <fieldset>
+            <div id="stowners" data-max="1000" class="offerSlider"></div>
+            Steam-Tracker owners (<a style="cursor: help; text-decoration: none;" title="The range of the steam-tracker app owners count: the number of Steam-Tracker users that own the (removed) game. \nI'd recommend adjusting this range to roughly match your selected tradable(s).">?</a>)
+        </fieldset>
+        <fieldset>
             <div id="wishlist" data-max="10000" class="offerSlider"></div>
             Wishlist count (<a style="cursor: help; text-decoration: none;" title="The range of the wishlist count: the number of Barter.vg users that have the game in their wishlist. \nI'd recommend adjusting this range to roughly match your selected tradable(s).">?</a>)
         </fieldset>
@@ -739,14 +784,22 @@ function setupAutomatedOffer() {
             <div id="tradables" data-max="10000" class="offerSlider"></div>
             Tradables count (<a style="cursor: help; text-decoration: none;" title="The range of the tradables count or availability: the number of Barter.vg users that have the game to trade.">?</a>)
         </fieldset>
-        <p style="float: left;">...from these platforms...</p>
-        <p style="margin-left: 50%;">...from users who...</p>
+        <p style="float: left; width: 50%;">...from these platforms...</p>
+        <p style="float: left; width: 50%;">...delivered via...</p>
         <div style="width: 50%; float: right; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
             <ul>
-                <li> <input type="checkbox" name="want_from" id="wantwishlist" value="wishlist" checked="true"> <label for="wantwishlist">...have those tradables in your wishlist.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your library.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wantlibrary" value="library"> <label for="wantlibrary">...have those tradables in your library.</label></li>
-                <li> <input type="checkbox" name="want_from" id="wanttradable" value="tradable"> <label for="wanttradable">...have those tradables in your tradables list.</label></li>
+                <li> <input type="checkbox" name="delivery" id="auto" value="auto" checked="true"> <label for="auto">Auto</label></li>
+                <li> <input type="checkbox" name="delivery" id="curator" value="curator" checked="true"> <label for="curator">Steam Curator Connect</label></li>
+                <li> <input type="checkbox" name="delivery" id="custom" value="custom" checked="true"> <label for="custom">Custom</label></li>
+                <li> <input type="checkbox" name="delivery" id="extra" value="extra" checked="true"> <label for="extra">Extra</label></li>
+                <li> <input type="checkbox" name="delivery" id="gift" value="gift" checked="true"> <label for="gift">Steam Gift</label></li>
+                <li> <input type="checkbox" name="delivery" id="gift-lock" value="gift-lock" checked="true"> <label for="gift-lock">Steam Gift (Lock)</label></li>
+                <li> <input type="checkbox" name="delivery" id="gift-trade" value="gift-trade" checked="true"> <label for="gift-trade">Steam Gift (Trade)</label></li>
+                <li> <input type="checkbox" name="delivery" id="included" value="included" checked="true"> <label for="included">Included</label></li>
+                <li> <input type="checkbox" name="delivery" id="key" value="key" checked="true"> <label for="key">Steam Key</label></li>
+                <li> <input type="checkbox" name="delivery" id="link" value="link" checked="true"> <label for="link">Bundle Gift Link</label></li>
+                <li> <input type="checkbox" name="delivery" id="unrevealed" value="unrevealed" checked="true"> <label for="unrevealed">Unrevealed</label></li>
+                <li> <input type="checkbox" name="delivery" id="unspecified" value="" checked="true"> <label for="unspecified">Unspecified</label></li>
             </ul>
         </div>
         <div style="width: 50%; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
@@ -912,6 +965,35 @@ function setupAutomatedOffer() {
                 <li><input type="checkbox" name="platform" id="blank" value="160"><label for="blank">WeGame X</label></li>
                 <li><input type="checkbox" name="platform" id="blank" value="161"><label for="blank">Indie Face Kick</label></li>
             </ul>
+        </div>
+        <p style="float: left; width: 50%;">...with availability...</p>
+        <p style="float: left; width: 50%;">...from users who...</p>
+        <div style="width: 50%; float: right; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
+            <ul>
+                <li> <input type="checkbox" name="want_from" id="wantwishlist" value="wishlist" checked="true"> <label for="wantwishlist">...have those tradables in your wishlist.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wantunowned" value="unowned"> <label for="wantunowned">...do <strong>not</strong> have those tradables in your library.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wantlibrary" value="library"> <label for="wantlibrary">...have those tradables in your library.</label></li>
+                <li> <input type="checkbox" name="want_from" id="wanttradable" value="tradable"> <label for="wanttradable">...have those tradables in your tradables list.</label></li>
+            </ul>
+        </div>
+        <div style="width: 50%; float: right; height: 14em; overflow: auto; border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);">
+            <ul>
+                <li><input type="checkbox" name="availability" id="available" value="0" checked="true"><label for="available">Available</label></li>
+                <li><input type="checkbox" name="availability" id="delisted" value="1" checked="true"><label for="delisted">Delisted</label></li>
+                <li><input type="checkbox" name="availability" id="test_app" value="2" checked="true"><label for="test_app">Test app</label></li>
+                <li><input type="checkbox" name="availability" id="purchase_disabled" value="3" checked="true"><label for="purchase_disabled">Purchase disabled</label></li>
+                <li><input type="checkbox" name="availability" id="retail_only" value="4" checked="true"><label for="retail_only">Retail only</label></li>
+                <li><input type="checkbox" name="availability" id="delisted_software" value="5" checked="true"><label for="delisted_software">Delisted software</label></li>
+                <li><input type="checkbox" name="availability" id="f2p_unavailable" value="6" checked="true"><label for="f2p_unavailable">F2P (unavailable)</label></li>
+                <li><input type="checkbox" name="availability" id="delisted_video" value="7" checked="true"><label for="delisted_video">Delisted video</label></li>
+                <li><input type="checkbox" name="availability" id="unreleased" value="13" checked="true"><label for="unreleased">Unreleased</label></li>
+                <li><input type="checkbox" name="availability" id="preorder_exclusive" value="14" checked="true"><label for="preorder_exclusive">Pre-order exclusive</label></li>
+                <li><input type="checkbox" name="availability" id="free_software" value="15" checked="true"><label for="free_software">Free software</label></li>
+                <li><input type="checkbox" name="availability" id="unreleased_software" value="19" checked="true"><label for="unreleased_software">Unreleased software</label></li>
+                <li><input type="checkbox" name="availability" id="banned" value="20" checked="true"><label for="banned">Banned</label></li>
+                <li><input type="checkbox" name="availability" id="banned_unreleased" value="23" checked="true"><label for="banned_unreleased">Banned (unreleased)</label></li>
+                <li><input type="checkbox" name="availability" id="delisted_hardware" value="25" checked="true"><label for="delisted_hardware">Delisted hardware</label></li>
+            </ul>
         </div>`);
 
         $("#offerStatus").html("<div class=\"statusCurrent\">Creating...</div><div class=\"\">Preparing...</div><div class=\"\">Sending offers...</div><div class=\"\">Completed</div>");
@@ -964,17 +1046,27 @@ function setupAutomatedOffer() {
         <p>
             <input type="checkbox" name="synclib" id="synclib" value="true" checked><label for="synclib">Synchronize your <a target="_blank" href="/u/${myuid}/l/">barter library</a> with <a target="_blank" href="https://store.steampowered.com/dynamicstore/userdata/">steam store userdata</a> first (RECOMMENDED).</label>
         </p>
+        <input class="showMoreToggle" type="checkbox" id="templatebox">
+        <label class="showMoreLabel " for="templatebox"> Export/import template (advanced)</label>
+        <div class="showMoreArea"><textarea style="width: 100%;" id="template"></textarea></div>
         <p><button id="massSendBtn" class="addTo gborder acceptOption" style="font-weight: bold; color: green; width: 100%; height: 2em; font-size: 1.2em; cursor: pointer;">Finish and Send Automated Offers</button>`);
         $("#massSendBtn").click((event) => {
             event.preventDefault();
-            sendAutomatedOffers();
+            sendAutomatedOffers(JSON.parse($("#template").val()));
         });
-
+        $("#offer :input").on("change click keyup paste", (event) => {
+            if (event.target.id === "template") {
+                return;
+            }
+            $("#template").val(JSON.stringify($("#offer").serializeObject()));
+        });
+        $("#template").val(JSON.stringify($("#offer").serializeObject()));
         $("[name='add_to_offer_1[]']").attr("name", "offering");
         $("#offerStatus+ div").remove();
         $("#offerStatus").attr("style", "border-top: 1px solid rgb(153, 17, 187); border-bottom: 1px solid rgb(153, 17, 187);");
         $(".offerSlider").get()
             .forEach(addSlider);
+        addShiftCheck();
     });
 }
 
@@ -1023,6 +1115,7 @@ function addSlider(slider) {
         "step":      1,
         range,
     }).on("update", (values) => {
+        $("#template").val(JSON.stringify($("#offer").serializeObject()));
         if (isToggle && !isPercent) {
             const value = parseInt(values[0]);
             $(`[name="${slider.id}"]`).val(Boolean(value));
@@ -1044,13 +1137,19 @@ function addSlider(slider) {
     }
 }
 
-function checkSettings(settings) {
-    if (!settings) {
-        settings = $("#offer").serializeObject();
-    }
-
+function fixSettings(settings) {
     settings = fixObjectTypes(settings);
+    settings.offering = Array.isArray(settings.offering) ? settings.offering : [settings.offering];
+    settings.offering_to = Array.isArray(settings.offering_to) ? settings.offering_to.map((g) => g.toLowerCase()) : [settings.offering_to.toLowerCase()];
+    settings.want_from = Array.isArray(settings.want_from) ? settings.want_from.map((g) => g.toLowerCase()) : [settings.want_from.toLowerCase()];
+    settings.platform = Array.isArray(settings.platform) ? settings.platform : [settings.platform];
+    settings.delivery = Array.isArray(settings.delivery) ? settings.delivery : [settings.delivery];
+    settings.availability = Array.isArray(settings.availability) ? settings.availability : [settings.availability];
+    settings.type = Array.isArray(settings.type) ? settings.type.map((g) => g.toLowerCase()) : [settings.type.toLowerCase()];
+    return settings;
+}
 
+function checkSettings(settings) {
     if (!settings.offering) {
         alert(`Please select ${settings.from_ratio} or more of your tradable(s) that you want to offer.`);
         return;
@@ -1076,6 +1175,16 @@ function checkSettings(settings) {
         return;
     }
 
+    if (!settings.delivery) {
+        alert("Please select 1 or more delivery options.");
+        return;
+    }
+
+    if (!settings.availability) {
+        alert("Please select 1 or more availability options.");
+        return;
+    }
+
     if (settings.message && settings.message.length > 255) {
         alert("Please limit your message to only 255 characters.");
         return;
@@ -1085,18 +1194,12 @@ function checkSettings(settings) {
         return;
     }
 
-    settings.offering = Array.isArray(settings.offering) ? settings.offering : [settings.offering];
-    settings.offering_to = Array.isArray(settings.offering_to) ? settings.offering_to.map((g) => g.toLowerCase()) : [settings.offering_to.toLowerCase()];
-    settings.want_from = Array.isArray(settings.want_from) ? settings.want_from.map((g) => g.toLowerCase()) : [settings.want_from.toLowerCase()];
-    settings.platform = Array.isArray(settings.platform) ? settings.platform : [settings.platform];
-    settings.type = Array.isArray(settings.type) ? settings.type.map((g) => g.toLowerCase()) : [settings.type.toLowerCase()];
-
-    if (settings.offering.length < settings.from_ratio) {
+    if (settings.offering.filter((i) => i).length < settings.from_ratio) {
         alert(`Please select ${settings.from_ratio} or more of your tradable(s) that you want to offer.`);
         return;
     }
 
-    if (settings.offering.length > 100) {
+    if (settings.offering.filter((i) => i).length > 100) {
         alert("Please select 100 or less of your tradable(s) that you want to offer.");
         return;
     }
@@ -1144,7 +1247,12 @@ function calculateStupidDailyLimit(offers) {
 }
 
 async function sendAutomatedOffers(options) {
-    const settings = checkSettings(options);
+    if (!options) {
+        options = $("#offer").serializeObject();
+    }
+
+    const settings = fixSettings(options);
+
     const alertError = (err) => {
         console.log(err);
         alert(err.message || err.name);
@@ -1152,7 +1260,7 @@ async function sendAutomatedOffers(options) {
 
     console.log({ settings });
 
-    if (!settings) {
+    if (!checkSettings(settings)) {
         return;
     }
 
@@ -1174,8 +1282,12 @@ async function sendAutomatedOffers(options) {
     }
 
     logHTML("Getting list of users that opted out for automated offers..");
-    const optins = await getBarterAppSettings(2);
+    const optins = await getBarterAppSettings(2).catch(alertError);
     console.log("optins", optins);
+
+    logHTML("Getting list of Steam-Tracker apps..");
+    const st_apps = await getSteamTrackerApps().catch(alertError);
+    console.log("stapps", st_apps);
 
     logHTML("Getting info about the tradables you are offering...");
     const allmatches = {};
@@ -1307,7 +1419,7 @@ async function sendAutomatedOffers(options) {
                 const tradable = tradables[line_id];
                 tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString()))
                     .map((tag) => tagregions[tag.tag_id]);
-                if (passesMyPreferences(tradable, settings, want_items, no_offers_items, limited_items, region)) {
+                if (passesMyPreferences(tradable, settings, st_apps, want_items, no_offers_items, limited_items, region)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
             }
@@ -1494,6 +1606,33 @@ function getBarterAppSettings(appid) {
     });
 }
 
+function getSteamTrackerApps() {
+    return new Promise(async(res, rej) => {
+        const response = await request({
+            "method": "GET",
+            "url":    "https://steam-tracker.com/api?action=GetAppListV3",
+        }).catch(rej);
+
+        let json;
+        try {
+            json = JSON.parse(response.responseText);
+        } catch (e) {
+            e.data = response;
+            rej(e);
+        }
+
+        if (!json || !json.success) {
+            rej(json);
+        }
+
+        const apps = {};
+        for (const app of json.removed_apps) {
+            apps[app.appid] = app;
+        }
+        res(apps);
+    });
+}
+
 function sendBarterOffer(options) {
     return new Promise(async(res, rej) => {
         console.log("options", options);
@@ -1554,7 +1693,7 @@ function request(options) {
     }));
 }
 
-function passesMyPreferences(game, settings, want_items, no_offers_items, limited_items, myregion) {
+function passesMyPreferences(game, settings, st_apps, want_items, no_offers_items, limited_items, myregion) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
     if (!pass) {
         return pass;
@@ -1571,8 +1710,29 @@ function passesMyPreferences(game, settings, want_items, no_offers_items, limite
     }
     // console.log(game.title, pass, new Error);
 
+    if (pass && game.hasOwnProperty("sku") && st_apps.hasOwnProperty(game.sku) && settings.hasOwnProperty("availability")) {
+        pass = pass && settings.availability.includes(st_apps[game.sku].category_id);
+    }
+    if (pass && game.hasOwnProperty("sku") && !st_apps.hasOwnProperty(game.sku) && settings.hasOwnProperty("availability")) {
+        pass = pass && settings.availability.includes(0);
+    }
+    // console.log(game.title, pass, new Error);
+
+    if (pass && game.hasOwnProperty("sku") && st_apps.hasOwnProperty(game.sku) && settings.hasOwnProperty("minstowners") && settings.hasOwnProperty("maxstowners")) {
+        pass = pass && inRange(settings.minstowners, settings.maxstowners, st_apps[game.sku].count || 0);
+    }
+    // console.log(game.title, pass, new Error);
+
     if (pass && game.hasOwnProperty("item_type") && settings.hasOwnProperty("type")) {
         pass = pass && settings.type.includes(game.item_type.toLowerCase());
+    }
+    // console.log(game.title, pass, new Error);
+
+    if (pass && game.hasOwnProperty("ci_type") && settings.hasOwnProperty("delivery")) {
+        pass = pass && settings.delivery.includes(game.ci_type.toLowerCase());
+    }
+    if (pass && !game.hasOwnProperty("ci_type") && settings.hasOwnProperty("delivery")) {
+        pass = pass && settings.delivery.includes("");
     }
     // console.log(game.title, pass, new Error);
 
@@ -1752,8 +1912,11 @@ function passesTheirPreferences(game, user, optins, group, offeringcount) { // g
 function fixObjectTypes(obj) {
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
-            const val = obj[key];
-            if (val === "true") {
+            let val = obj[key];
+            if (Array.isArray(val)) {
+                // eslint-disable-next-line no-extra-parens
+                obj[key] = val.map((i) => (isFinite(i) ? Number(i) : i));
+            } else if (val === "true") {
                 obj[key] = true;
             } else if (val === "false") {
                 obj[key] = false;
@@ -1769,9 +1932,9 @@ function fixObjectTypes(obj) {
 
 function filterRows(event) {
     const val = event.target.value.toLowerCase();
-    $("tbody tr:not(.platform)").get()
+    $(".collection tbody tr:not(.platform)").get()
         .forEach((elem) => {
-            if ($(elem).text()
+            if ($(elem).html()
                 .toLowerCase()
                 .includes(val)) {
                 $(elem).show();
@@ -1860,6 +2023,56 @@ function extendExpiry(event) {
         });
 }
 
+function removeOwned(event) {
+    event.preventDefault();
+    if (!confirm("Are you sure you want to purge owned items from visible offers? This may cause nasty side effects, like empty sides, new ratios, etc.")) {
+        return;
+    }
+
+    $("#offers tr.active:visible").get()
+        .forEach((elem) => {
+            const url = $("a.textColor", elem).attr("href");
+            $.post(url, {
+                "offer_setup": 3,
+                "edit_offer":  "✐ Edit Offer",
+            }, (data) => {
+                data = data.replace(/src="[^"]*"/ig, "");
+                // assuming you are the one sending this offer
+                const $to_items = $(".tradables_items_list [data-item-id]:has(.checked_to)", data);
+                const checked = [];
+                for (let i = 0; i < $to_items.length; i++) {
+                    const $elem = $($to_items[i]);
+                    console.log($elem.find(".collectionsIncluded").text());
+                    if ($elem.find(".collectionsIncluded").text()
+                        .toLowerCase()
+                        .includes("library")) {
+                        checked.push($elem.find(".checked_to").val());
+                    }
+                }
+                const formdata = $("#offer", data).serializeObject();
+                console.log({ checked, formdata });
+
+                if (checked.length === 0) {
+                    formdata.propose_offer = "Finish and Propose Offer";
+                    $.post(url, formdata, () => $(elem).find("*")
+                        .css("color", "grey"));
+                    return;
+                }
+
+                formdata.checked = checked;
+                formdata.remove_offer_items = " － Remove Selected";
+                $.post(url, formdata, (data) => {
+                    data = data.replace(/src="[^"]*"/ig, "");
+                    const formdata = $("#offer", data).serializeObject();
+                    formdata.propose_offer = "Finish and Propose Offer";
+                    console.log({ formdata });
+                    $.post(url, formdata, () => $(elem).find("*")
+                        .css("color", "green"));
+                });
+            });
+        });
+}
+
 function ajaxify() {
     return; // disabled for now
     // eslint-disable-next-line no-unreachable
@@ -1906,7 +2119,7 @@ function parseHtml(html, status, xhr) {
         History.replaceState(null, document.title, xhr.url);
     }
 
-    barterReady();
+    $(document).ready(barterReady);
 }
 
 function serializeObject() {
@@ -2068,6 +2281,10 @@ const stylesheet = `
 
     .offerSlider.on {
         background-color: #fff;
+    }
+
+    #bc {
+        width: 10em;
     }
 `;
 
