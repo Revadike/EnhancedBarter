@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.3.0
+// @version      1.3.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -297,7 +297,9 @@ function barterReady() {
     }
 
     // The accepted offer page
-    $("input[value='Completed Offer']").before("<input type=\"checkbox\" id=\"finalizeOfferCheck\"> Comprehensive offer completion");
+    $("p:has(> [name='offer_success_update'])").after("<p><input type=\"checkbox\" id=\"finalizeOfferCheck\"><label for=\"finalizeOfferCheck\"><abbr title=\"Complete offer on barter.vg with selected settings, leave a positive rep with custom message on steamtrades, comprehensive library sync and copy custom message to clipboard.\" class=\"bold\"> ⥅ Comprehensive Completion</abbr> complete offer, <a href=\"javascript:void(0)\" id=\"changeRepMsg\">positive steamtrades rep</a>, comprehensive library sync and <a href=\"javascript:void(0)\" id=\"changeClipboardMsg\">set clipboard</a></label></p>");
+    $("#changeRepMsg").click(changeRepMsg);
+    $("#changeClipboardMsg").click(changeClipboardMsg);
     $("#finalizeOfferCheck").prop("checked", GM_getValue("finalizeOffer", true));
     $("input[value='Completed Offer']").click(finalizeOffer);
 }
@@ -491,15 +493,26 @@ function handleRequests() {
     }
 }
 
-function finalizeOffer(event) {
-    event.preventDefault();
+function changeRepMsg() {
+    let msg = GM_getValue("repmsg", "＋REP {{name}} is an amazing trader, recommended! We successfully completed this trade: {{url}}. Thanks a lot for the trade!");
+    let newmsg = prompt("Message to post along SteamTrades feedback ({{name}} = trader's name, {{url}} = offer URL):", msg);
+    GM_setValue("repmsg", newmsg || msg);
+}
 
+function changeClipboardMsg() {
+    let msg = GM_getValue("clipboardmsg", "Thanks for the trade!\nI completed the trade on barter.vg and left feedback on your steamtrades profile.\nIf you haven't done so already, could you please do the same?\n{{url}}\n{{sgprofile}}");
+    let newmsg = prompt("Message to copy to clipboard after offer completion ({{url}} = offer URL, {{sgprofile}} = steamtrades profile link):", msg);
+    GM_setValue("clipboardmsg", newmsg || msg);
+}
+
+function finalizeOffer(event) {
     const check = $("#finalizeOfferCheck").prop("checked");
-    GM_setValue("finalizeOffer", check);
+    GM_setValue("finalizeOffer", check); // Remember last used setting
     if (!check) {
-        return;
+        return true;
     }
 
+    event.preventDefault();
     const main = $(event.target).parents("#main");
     const steamid = $("#offerHeader [alt=\"Steam icon\"]", main).get()
         .map((elem) => elem.title)
@@ -507,7 +520,9 @@ function finalizeOffer(event) {
     const name = $(`#offerHeader tr:has([title="${steamid}"]) > td:nth-child(2) > strong > a`, main).text();
     const form = $(event.target).parents("form");
     const url = form.attr("action").split("#")[0];
-    const msg = `＋REP ${name} is an amazing trader, recommended! We successfully completed this trade: ${url}. Thanks a lot for the trade!`;
+
+    let msg = GM_getValue("repmsg", "＋REP {{name}} is an amazing trader, recommended! We successfully completed this trade: {{url}}. Thanks a lot for the trade!");
+    msg = msg.replace(/\{\{name\}\}/g, name).replace(/\{\{url\}\}/g, url);
 
     $(event.target).val("Completing trade, sending feedback and syncing library...")
         .prop("disabled", true);
@@ -607,7 +622,8 @@ async function postSteamTradesComment(msg, steamid, callback) {
 
 function setPostTradeClipboard(url) {
     const sgprofile = `https://www.steamtrades.com/user/${mysid}`;
-    const msg = `Thanks for the trade!\nI completed the trade on barter.vg and left feedback on your steamtrades profile.\nIf you haven't done so already, could you please do the same?\n${url}\n${sgprofile}`;
+    let msg = GM_getValue("clipboardmsg", "Thanks for the trade!\nI completed the trade on barter.vg and left feedback on your steamtrades profile.\nIf you haven't done so already, could you please do the same?\n{{url}}\n{{sgprofile}}");
+    msg = msg.replace(/\{\{url\}\}/g, url).replace(/\{\{sgprofile\}\}/g, sgprofile);
     GM_setClipboard(msg);
 }
 
