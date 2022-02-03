@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.3.1
+// @version      1.3.2
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -2056,17 +2056,17 @@ function removeOwned(event) {
                 // assuming you are the one sending this offer
                 const $to_items = $(".tradables_items_list [data-item-id]:has(.checked_to)", data);
                 const checked = [];
+                const myname = $("#main > h1 > a:nth-child(2)").text();
                 for (let i = 0; i < $to_items.length; i++) {
                     const $elem = $($to_items[i]);
-                    console.log($elem.find(".collectionsIncluded").text());
-                    if ($elem.find(".collectionsIncluded").text()
+                    if ($elem.find(`.collectionsIncluded [title="${myname}"]`).nextUntil("img")
+                        .text()
                         .toLowerCase()
                         .includes("library")) {
                         checked.push($elem.find(".checked_to").val());
                     }
                 }
                 const formdata = $("#offer", data).serializeObject();
-                console.log({ checked, formdata });
 
                 if (checked.length === 0) {
                     formdata.propose_offer = "Finish and Propose Offer";
