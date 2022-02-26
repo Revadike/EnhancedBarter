@@ -3,10 +3,11 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.3.2
+// @version      1.3.3
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
+// @connect      gg.deals
 // @connect      steam-tracker.com
 // @connect      steamcommunity.com
 // @connect      steamtrades.com
@@ -114,6 +115,25 @@ function barterReady() {
     }
 
     usergroups = GM_getValue("usergroups", {});
+
+    $("[title=\"Steam store page\"]").get()
+        .forEach((elem) => {
+            let appid = elem.href.split("/")[4];
+            $(elem).parent()
+                .prepend(`<span class="tag"><a style="cursor: pointer;" id="ggdeals_${appid}"><img src="https://bartervg.com/imgs/ico/gg.png" width="18" height="18" alt="GG.Deals: Click to load price info!" title="GG.Deals"></a><small id="ggdeals_${appid}_after"></small></span>`);
+            $(`[id="ggdeals_${appid}"]`).click(() => request({
+                "method": "GET",
+                "url":    `https://gg.deals/steam/app/${appid}`,
+                "onload": (response) => {
+                    let parser = new DOMParser();
+                    let body = parser.parseFromString(response.responseText, "text/html");
+                    let price = $("#game-header-current-prices .price", body).get()
+                        .map((t) => t.innerText)
+                        .join(" / ");
+                    $(`[id="ggdeals_${appid}_after"]`).html(` (<a href="https://gg.deals/steam/app/${appid}" title="GG.Deals current lowest price (Official Stores / Keyshops)">${price}</a>)`);
+                },
+            }));
+        });
 
     // The match page and user profile page
     $("#tradeUser [label=Groups] option, [name=group] option").get()
