@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.3.3
+// @version      1.3.4
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -116,11 +116,17 @@ function barterReady() {
 
     usergroups = GM_getValue("usergroups", {});
 
-    $("[title=\"Steam store page\"]").get()
+    $("[title=\"Steam store page\"], [title=\"Steam community page\"]").get()
         .forEach((elem) => {
             let appid = elem.href.split("/")[4];
             $(elem).parent()
-                .prepend(`<span class="tag"><a style="cursor: pointer;" id="ggdeals_${appid}"><img src="https://bartervg.com/imgs/ico/gg.png" width="18" height="18" alt="GG.Deals: Click to load price info!" title="GG.Deals"></a><small id="ggdeals_${appid}_after"></small></span>`);
+                .prepend(`
+                <span class="tag">
+                    <a style="cursor: pointer;" id="ggdeals_${appid}">
+                        <img src="https://bartervg.com/imgs/ico/gg.png" width="18" height="18" title="GG.Deals: Click to load price info!">
+                    </a>
+                    <small id="ggdeals_${appid}_after"></small>
+                </span>`);
             $(`[id="ggdeals_${appid}"]`).click(() => request({
                 "method": "GET",
                 "url":    `https://gg.deals/steam/app/${appid}`,
