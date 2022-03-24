@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.3.4
+// @version      1.3.5
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -21,7 +21,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @run-at       document-start
-// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.4.4/fuse.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/history.js/1.8/bundled-uncompressed/html4+html5/jquery.history.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.js
@@ -2071,48 +2071,62 @@ function removeOwned(event) {
         return;
     }
 
-    $("#offers tr.active:visible").get()
-        .forEach((elem) => {
-            const url = $("a.textColor", elem).attr("href");
-            $.post(url, {
-                "offer_setup": 3,
-                "edit_offer":  "✐ Edit Offer",
-            }, (data) => {
+    const elems = $("#offers tr.active:visible").get();
+    const nParallel = 3;
+    const purge = () => {
+        if (elems.length === 0) {
+            return;
+        }
+        const elem = elems.shift();
+        const url = $("a.textColor", elem).attr("href");
+        $.post(url, {
+            "offer_setup": 3,
+            "edit_offer":  "✐ Edit Offer",
+        }, (data) => {
+            data = data.replace(/src="[^"]*"/ig, "");
+            // assuming you are the one sending this offer
+            const $to_items = $(".tradables_items_list [data-item-id]:has(.checked_to)", data);
+            const checked = [];
+            const myname = $("#main > h1 > a:nth-child(2)").text();
+            for (let i = 0; i < $to_items.length; i++) {
+                const $elem = $($to_items[i]);
+                if ($elem.find(`.collectionsIncluded [title="${myname}"]`).nextUntil("img")
+                    .text()
+                    .toLowerCase()
+                    .includes("library")) {
+                    checked.push($elem.find(".checked_to").val());
+                }
+            }
+            const formdata = $("#offer", data).serializeObject();
+
+            if (checked.length === 0) {
+                formdata.propose_offer = "Finish and Propose Offer";
+                $.post(url, formdata, () => {
+                    $(elem).find("*")
+                        .css("color", "grey");
+                    setTimeout(purge, 0);
+                });
+                return;
+            }
+
+            formdata.checked = checked;
+            formdata.remove_offer_items = " － Remove Selected";
+            $.post(url, formdata, (data) => {
                 data = data.replace(/src="[^"]*"/ig, "");
-                // assuming you are the one sending this offer
-                const $to_items = $(".tradables_items_list [data-item-id]:has(.checked_to)", data);
-                const checked = [];
-                const myname = $("#main > h1 > a:nth-child(2)").text();
-                for (let i = 0; i < $to_items.length; i++) {
-                    const $elem = $($to_items[i]);
-                    if ($elem.find(`.collectionsIncluded [title="${myname}"]`).nextUntil("img")
-                        .text()
-                        .toLowerCase()
-                        .includes("library")) {
-                        checked.push($elem.find(".checked_to").val());
-                    }
-                }
                 const formdata = $("#offer", data).serializeObject();
-
-                if (checked.length === 0) {
-                    formdata.propose_offer = "Finish and Propose Offer";
-                    $.post(url, formdata, () => $(elem).find("*")
-                        .css("color", "grey"));
-                    return;
-                }
-
-                formdata.checked = checked;
-                formdata.remove_offer_items = " － Remove Selected";
-                $.post(url, formdata, (data) => {
-                    data = data.replace(/src="[^"]*"/ig, "");
-                    const formdata = $("#offer", data).serializeObject();
-                    formdata.propose_offer = "Finish and Propose Offer";
-                    console.log({ formdata });
-                    $.post(url, formdata, () => $(elem).find("*")
-                        .css("color", "green"));
+                formdata.propose_offer = "Finish and Propose Offer";
+                $.post(url, formdata, () => {
+                    $(elem).find("*")
+                        .css("color", "green");
+                    setTimeout(purge, 0);
                 });
             });
         });
+    };
+
+    for (let i = 0; i < nParallel; i++) {
+        setTimeout(purge, 0);
+    }
 }
 
 function ajaxify() {
