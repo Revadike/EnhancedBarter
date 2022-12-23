@@ -160,10 +160,6 @@ function barterReady() {
             elem.innerText = `${elem.innerText} : ${name}`;
         });
 
-    // The match page
-    $("#mutualmatches").before("<br><p>Send multiple automated offers (1:1) to all matches, based on roughly the same GG.Deals current lowest price (±15%).</p><input type=\"button\" class=\"addTo pborder\" value=\"✉ Send Automated Offers\" id=\"offerMatchesBtn\" title=\"Send offers to all matches with roughly the same GG.Deals value (±15%)\"><input type=\"checkbox\" id=\"offerMatchesBtnConfirm\" checked><label for=\"offerMatchesBtnConfirm\">Pause each sent offer (to manually verify)?</label>");
-    $("#offerMatchesBtn").click(clickOfferMatchesBtn);
-
     const cats = ["trade", "wish"];
     const sortings = {};
     cats.forEach((cat) => {
@@ -337,184 +333,6 @@ function barterReady() {
     $("#changeClipboardMsg").click(changeClipboardMsg);
     $("#finalizeOfferCheck").prop("checked", GM_getValue("finalizeOffer", true));
     $("input[value='Completed Offer']").click(finalizeOffer);
-}
-
-async function clickOfferMatchesBtn(event) {
-    event.preventDefault();
-
-    let doConfirm = $("#offerMatchesBtnConfirm").prop("checked");
-    let ggdeals = JSON.parse(GM_getValue("ggdeals", "{}"));
-    let bartervg = JSON.parse(GM_getValue("browsejson", "{}"));
-    let sent = 0;
-
-    event.target.value = `Sending offers... (${sent} sent)`;
-    event.target.disabled = true;
-    if (Object.keys(bartervg).length === 0 || Date.now() - bartervg.lastupdated > 24 * 60 * 60 * 1000) {
-        bartervg = await request({
-            "method":  "GET",
-            "url":     `https://bartervg.com/browse/json/?${Date.now()}`,
-            "timeout": 120000,
-        }).then((response) => { console.log({ response }); return JSON.parse(response.responseText); })
-            .catch((error) => {
-                console.error(error);
-                return null;
-            });
-
-        if (!bartervg) {
-            event.target.value = "Error fetching barter.vg data. Try again?";
-            event.target.disabled = false;
-            return;
-        }
-
-        bartervg.lastupdated = Date.now();
-        GM_setValue("browsejson", JSON.stringify(bartervg));
-    }
-
-    if (!confirm("Are you sure you want to send offers to all matches with roughly the same GG.Deals value (±15%)?")) {
-        return;
-    }
-
-    let message = prompt("Enter a message to send with the offers", "");
-
-    let mytradables = await request({
-        "method": "GET",
-        "url":    `https://bartervg.com/u/${myuid}/t/json/`,
-    }).then((response) => Object.values(JSON.parse(response.responseText)?.by_platform[1]))
-        .catch((error) => {
-            console.error(error);
-            return null;
-        });
-
-    if (!mytradables) {
-        event.target.value = "Error fetching your tradables. Try again?";
-        event.target.disabled = false;
-        return;
-    }
-
-    function getPrice(appid, cb) {
-        if (ggdeals[appid] && ggdeals[appid].lastupdated < 24 * 60 * 60 * 1000) { return cb(ggdeals[appid].price); }
-        request({
-            "method": "GET",
-            "url":    `https://gg.deals/steam/app/${appid}`,
-            "onload": (response) => {
-                let parser = new DOMParser();
-                let body = parser.parseFromString(response.responseText, "text/html");
-                let price = Math.min(...$("#game-header-current-prices .price", body).get()
-                    // eslint-disable-next-line no-confusing-arrow
-                    .map((t) => t.innerText.trim().toLowerCase() === "free"
-                        ? 0
-                        // eslint-disable-next-line no-useless-escape
-                        : Number(t.innerText.replace(",", ".").replace(/[^\d\.]+/g, "")) || Infinity));
-                ggdeals[appid] = { price, "lastupdated": Date.now() };
-                GM_setValue("ggdeals", JSON.stringify(ggdeals));
-                cb(price);
-            },
-        });
-    }
-
-    for (let mylist of $("ul.matchcol.matcht").get()) {
-        let theirlist = $(mylist).next();
-        let form = $(theirlist).next();
-        let myitems = shuffle($("li a", mylist).get()
-            .map((e) => e.href.split("/")[4])
-            .filter((i) => bartervg[i]?.sku));
-        let theiritems = shuffle($("li a", theirlist).get()
-            .map((e) => e.href.split("/")[4])
-            .filter((i) => bartervg[i]?.sku));
-        if ($(".highlight", mylist).length > 0) {
-            myitems = shuffle($("li a.highlight", mylist).get()
-                .map((e) => e.href.split("/")[4])
-                .filter((i) => bartervg[i]?.sku));
-        }
-        if ($(".highlight", theirlist).length > 0) {
-            theiritems = shuffle($("li a.highlight", theirlist).get()
-                .map((e) => e.href.split("/")[4])
-                .filter((i) => bartervg[i]?.sku));
-        }
-        let myappids = myitems.map((i) => bartervg[i]?.sku);
-        let theirappids = theiritems.map((i) => bartervg[i]?.sku);
-        let myprices = await Promise.all(myappids.map((a) => new Promise((res) => getPrice(a, res))));
-        let theirprices = await Promise.all(theirappids.map((a) => new Promise((res) => getPrice(a, res))));
-        // console.log({ myitems, theiritems, myappids, myprices, ggdeals });
-        // eslint-disable-next-line no-labels
-        loop:
-        for (let i = 0; i < myitems.length; i++) {
-            for (let j = 0; j < theiritems.length; j++) {
-                let myprice = myprices[i];
-                let theirprice = theirprices[j];
-                if (!isFinite(myprice) || !isFinite(theirprice) || myprice * 0.85 >= theirprice || theirprice >= myprice * 1.15) {
-                    continue;
-                }
-
-                let myitem = myitems[i];
-                let theiritem = theiritems[j];
-                let theirid = Number($("[name=to_user_id]", form).val());
-                let theirtradables = await request({
-                    "method": "GET",
-                    "url":    `https://bartervg.com/u/${theirid.toString(16)}/t/json/`,
-                }).then((response) => Object.values(JSON.parse(response.responseText)?.by_platform[1]))
-                    .catch((error) => {
-                        console.error(error);
-                        return null;
-                    });
-
-                if (!theirtradables) {
-                    // eslint-disable-next-line no-labels
-                    break loop;
-                }
-                // eslint-disable-next-line eqeqeq
-                let ato1 = mytradables.filter((t) => t.item_id == myitem).map((t) => `${t.item_id},${t.line_id}`);
-                // eslint-disable-next-line eqeqeq
-                let ato2 = theirtradables.filter((t) => t.item_id == theiritem).map((t) => `${t.item_id},${t.line_id}`);
-                // console.log({
-                //     mytradables,
-                //     theirtradables,
-                //     ato1,
-                //     ato2,
-                // });
-                if (ato1.length === 0 || ato2.length === 0) {
-                    // Why is this happening?
-                    console.log({
-                        mytradables,
-                        theirtradables,
-                        ato1,
-                        ato2,
-                        myitem,
-                        theiritem,
-                        myprice,
-                        theirprice,
-                    });
-                    continue;
-                }
-                let offer = await sendBarterOffer({
-                    "to":                  theirid,
-                    "from_and_or":         1,
-                    "to_and_or":           1,
-                    "expire":              3,
-                    "counter_preference":  0,
-                    "add_to_offer_from[]": ato1,
-                    "add_to_offer_to[]":   ato2,
-                    message,
-                });
-
-                console.log({ offer });
-                if (offer && doConfirm) {
-                    await request({
-                        "url":     `https://barter.vg/u/${myuid}/o/${offer.offer_id}/`,
-                        "data":    "offer_setup=3&pause_offer=%E2%8F%B8+Pause+Offer",
-                        "method":  "POST",
-                        "headers": { "Content-Type": "application/x-www-form-urlencoded" },
-                    });
-                }
-
-                event.target.value = `Sending offers... (${++sent} sent)`;
-                // eslint-disable-next-line no-labels
-                break loop;
-            }
-        }
-    }
-
-    event.target.value = `Done! Sent ${sent} offers in total.${doConfirm ? " Check and confirm your offers!" : ""}`;
 }
 
 function clickLibSyncBtn(event) {
@@ -892,7 +710,7 @@ function setupAutomatedOffer() {
                 <a href="https://steamcommunity.com/groups/bartervg/discussions/6/1470841715930902039/">
                     <span title="version ${GM_info.script.version}">${GM_info.script.name}</span>
                 </a>
-                <a href="https://github.com/Royalgamer06/EnhancedBarter/">
+                <a href="https://github.com/Revadike/EnhancedBarter/">
                     <img src="https://bartervg.com/imgs/ico/github.png" alt="GitHub icon" title="GitHub" class="icon">
                 </a>
                 <span>(not associated with Barter.vg)</span>
