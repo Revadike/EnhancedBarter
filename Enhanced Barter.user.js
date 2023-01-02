@@ -3,7 +3,7 @@
 // @icon         https://bartervg.com/imgs/ico/barter/favicon-32x32.png
 // @namespace    Revadike
 // @author       Revadike
-// @version      1.4.0
+// @version      1.4.1
 // @description  This userscript aims to enhance your experience at barter.vg
 // @match        https://barter.vg/*
 // @match        https://wwww.barter.vg/*
@@ -1339,29 +1339,45 @@ async function sendAutomatedOffers(options) {
     logHTML("Getting info about the tradables you are offering...");
     const allmatches = {};
     const mytradables = {};
-    const { tags, "user": { region } } = await getBarterTradables(parseInt(myuid, 16));
-    const tagregions = {
+    const { tags, "user": { country_id } } = await getBarterTradables(parseInt(myuid, 16));
+    const tag2cc = {
         // "26": region,
         // "27": `RU`,
-        "28": 1,
-        "29": 2,
-        "30": 3,
-        "31": 4,
-        "34": 6,
-        "35": 5,
+        // "28": 1,
+        // "29": 2,
+        // "30": 3,
+        // "31": 4,
+        // "34": 6,
+        // "35": 5,
         // "346": region
         // "364": `PL`,
         // "376": `ROW`,
         // "387": `DE`,
         // "398": `IN`,
         // "479": `CN`
+
+        "27":  [191], // locked: RU
+        "28":  [7, 16, 36, 79, 116, 125, 139, 191, 219, 222, 230, 235], // locked: CIS
+        "29":  [10, 29, 31, 32, 37, 46, 49, 50, 63, 91, 94, 97, 157, 165, 173, 174, 186, 207, 210, 234, 238], // locked: SA
+        "30":  [101, 158, 177, 198, 218], // locked: SEA
+        "31":  [225], // locked: TR
+        "34":  [38, 233], // locked: NA
+        "35":  [15, 6, 1, 12, 20, 17, 22, 98, 55, 56, 59, 64, 74, 70, 75, 57, 83, 89, 81, 100, 109, 102, 110, 111, 135, 129, 133, 134, 144, 153, 139, 138, 140, 166, 179, 184, 189, 204, 190, 202, 200, 68, 197, 43, 77], // locked: EU
+        "364": [179], // locked: PL
+        "376": [1, 2, 3, 4, 5, 6, 8, 9, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 33, 34, 35, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 92, 93, 95, 96, 98, 99, 100, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 121, 122, 123, 124, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 160, 161, 162, 163, 164, 166, 167, 168, 169, 170, 171, 172, 175, 176, 178, 179, 180, 181, 182, 183, 184, 185, 187, 188, 189, 190, 192, 193, 194, 195, 196, 197, 199, 200, 201, 202, 203, 204, 205, 206, 208, 209, 211, 212, 213, 214, 215, 216, 217, 220, 221, 223, 224, 226, 227, 228, 229, 231, 232, 233, 236, 237, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250], // locked: ROW
+        "387": [57], // locked: DE
+        "398": [105], // locked: IN
+        "479": [48], // locked: CN
+        "534": [225, 107, 193, 245, 212, 2, 103, 113, 183, 127, 172, 123, 187, 23, 108, 164, 69, 65, 40, 247, 115, 62, 231, 196, 137, 82, 159, 44, 142, 8, 47, 162, 21, 145, 156, 248, 205, 249, 215, 86, 223, 192, 208, 25, 206, 24, 217, 136, 203, 41, 67, 42, 131, 151, 76, 160, 35, 132, 88, 85, 93, 154, 213, 58, 188, 119, 66, 52, 246, 209, 195], // locked: MEA
+        "624": [114], // locked: JP
     };
 
     for (const i of settings.offering) {
         const key = i.split(",");
         mytradables[i] = await getBarterItemInfo(key[0]);
-        mytradables[i].regions = Object.values(tags[key[1]] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString()))
-            .map((tag) => tagregions[tag.tag_id]);
+        mytradables[i].regions = Object.values(tags[key[1]] || {}).filter((tag) => Object.keys(tag2cc).includes(tag.tag_id.toString()))
+            .map((tag) => tag2cc[tag.tag_id])
+            .flat();
     }
 
     console.log("mytradables", mytradables);
@@ -1464,9 +1480,10 @@ async function sendAutomatedOffers(options) {
             const tradables = theirtradables.by_platform[platformid];
             for (const line_id in tradables) {
                 const tradable = tradables[line_id];
-                tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tagregions).includes(tag.tag_id.toString()))
-                    .map((tag) => tagregions[tag.tag_id]);
-                if (passesMyPreferences(tradable, settings, st_apps, want_items, no_offers_items, limited_items, region)) {
+                tradable.regions = Object.values(theirtradables.tags[line_id] || {}).filter((tag) => Object.keys(tag2cc).includes(tag.tag_id.toString()))
+                    .map((tag) => tag2cc[tag.tag_id])
+                    .flat();
+                if (passesMyPreferences(tradable, settings, st_apps, want_items, no_offers_items, limited_items, country_id)) {
                     allmatches[uid].want.add(`${tradable.item_id},${tradable.line_id}`);
                 }
             }
@@ -1740,15 +1757,19 @@ function request(options) {
     }));
 }
 
-function passesMyPreferences(game, settings, st_apps, want_items, no_offers_items, limited_items, myregion) {
+function passesMyPreferences(game, settings, st_apps, want_items, no_offers_items, limited_items, mycountry) {
     let pass = want_items.includes(game.item_id) && settings.platform.includes(game.platform_id) && !no_offers_items.includes(game.line_id);
     if (!pass) {
         return pass;
     }
     // console.log(game.title, pass, new Error);
 
-    if (pass && myregion && game.regions && game.regions.length > 0) {
-        pass = pass && game.regions.includes(myregion); // their tradable region lock has my region
+    if (pass && mycountry && mycountry !== 0 && game.regions && game.regions.length > 0) {
+        pass = pass && game.regions.includes(mycountry); // their tradable region lock has my country
+    }
+    // lack of information: assume bad region
+    if (pass && (!mycountry || mycountry === 0) && game.regions && game.regions.length > 0) {
+        return false;
     }
     // console.log(game.title, pass, new Error);
 
@@ -1868,7 +1889,12 @@ function passesMyPreferences(game, settings, st_apps, want_items, no_offers_item
 
 function passesTheirPreferences(game, user, optins, group, offeringcount) { // game = my tradable
     const my_user_id = parseInt(myuid, 16);
-    let pass = user.region && game.regions && game.regions.length > 0 ? game.regions.includes(user.region) : true;
+    let pass = user.country_id && user.country_id !== 0 && game.regions && game.regions.length > 0 ? game.regions.includes(user.country_id) : true;
+
+    // lack of information: assume bad region
+    if (pass && (!user.country_id || user.country_id === 0) && game.regions && game.regions.length > 0) {
+        return false;
+    }
 
     if (optins.hasOwnProperty("global") || optins.hasOwnProperty("0")) { // for future support, not yet implemented in API (#6)
         if (pass && user.hasOwnProperty("user_id") && optins.hasOwnProperty("global") && optins.global.hasOwnProperty(user.user_id)) {
