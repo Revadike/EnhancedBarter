@@ -147,22 +147,22 @@ function barterReady() {
             }));
         });
     
-    // Add GGdeals for match screen
+    let tempI = 0;
     $(".matchcol li a[href*='barter.vg/i/']").get()
         .forEach((elem) => {
 
         let barterId = elem.href.match(/vg\/i\/\d+/g)[0].split("/")[2];
+        let spanId = barterId + "_" + tempI
 
         $(elem).parent()
             .prepend(`
                 <span class="tag">
-                    <a style="cursor: pointer;" id="ggdeals_${barterId}">
+                    <a style="cursor: pointer;" id="ggdeals_${spanId}">
                         <img src="https://bartervg.com/imgs/ico/gg.png" width="18" height="18" title="GG.Deals: Click to load price info!">
                     </a>
                     <small id="ggdeals_${barterId}_after"></small>
                 </span>`);
-        $(`[id="ggdeals_${barterId}"]`).click(() => {
-            (async() => {
+        $(`[id="ggdeals_${spanId}"]`).click(async () => {
                 let barterItem = await getBarterItemInfo(barterId);
                 let type = barterItem.source_profile.includes("app") ? "app" : "sub";
                 let id = barterItem.sku;
@@ -178,8 +178,8 @@ function barterReady() {
                         $(`[id="ggdeals_${barterId}_after"]`).html(` (<a href="https://gg.deals/steam/${type}/${id}" title="GG.Deals current lowest price (Official Stores / Keyshops)">${price}</a>)`);
                     },
                 });
-            })();
         });
+        tempI++;
     });
 
     // The match page and user profile page
