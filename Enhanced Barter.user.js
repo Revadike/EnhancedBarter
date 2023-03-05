@@ -122,7 +122,7 @@ function barterReady() {
 
     usergroups = GM_getValue("usergroups", {});
 
-    $("[title=\"Steam store page\"], [title=\"Steam community page\"]").get()
+    $("[title=\"Steam store page\"], [title=\"Steam community page\"], [title=\"Steam store in a new tab\"]").get()
         .forEach((elem) => {
             let [type, id] = elem.href.match(/(sub|app)\/\d+/g)[0].split("/");
             $(elem).parent()
