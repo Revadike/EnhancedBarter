@@ -151,9 +151,6 @@ function barterReady() {
     $(".matchcol li a[href*='barter.vg/i/']").get()
         .forEach((elem) => {
 
-        if (elem.href.includes("barter.vg/bundle/") || elem.href.includes("barter.vg/u/")) {
-            return;
-        }
         let barterId = elem.href.match(/vg\/i\/\d+/g)[0].split("/")[2];
 
         $(elem).parent()
