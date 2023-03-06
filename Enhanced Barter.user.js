@@ -164,7 +164,7 @@ function barterReady() {
                 </span>`);
         $(`[id="ggdeals_${spanId}"]`).click(async () => {
                 // inform user as this can take a bit with calls to barter
-                $(`[id="ggdeals_${barterId}_after"]`).html(` (<a title="GG.Deals current lowest price (Official Stores / Keyshops)">Loading Price please wait</a>)`);
+                $(`[id="ggdeals_${barterId}_after"]`).text(`Loading price, please wait`);
                 // Perform calls to barter and ggdeals
                 let barterItem = await getBarterItemInfo(barterId);
                 let type = barterItem.source_profile.includes("app") ? "app" : "sub";
