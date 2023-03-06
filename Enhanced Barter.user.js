@@ -146,6 +146,44 @@ function barterReady() {
                 },
             }));
         });
+    
+    let tempI = 0;
+    $(".matchcol li a[href*='barter.vg/i/']").get()
+        .forEach((elem) => {
+
+        let barterId = elem.href.match(/vg\/i\/\d+/g)[0].split("/")[2];
+        let spanId = barterId + "_" + tempI
+
+        $(elem).parent()
+            .prepend(`
+                <span class="tag">
+                    <a style="cursor: pointer;" id="ggdeals_${spanId}">
+                        <img src="https://bartervg.com/imgs/ico/gg.png" width="18" height="18" title="GG.Deals: Click to load price info!">
+                    </a>
+                    <small id="ggdeals_${barterId}_after"></small>
+                </span>`);
+        $(`[id="ggdeals_${spanId}"]`).click(async () => {
+                // inform user as this can take a bit with calls to barter
+                $(`[id="ggdeals_${barterId}_after"]`).text(`Loading price, please wait`);
+                // Perform calls to barter and ggdeals
+                let barterItem = await getBarterItemInfo(barterId);
+                let type = barterItem.source_profile.includes("app") ? "app" : "sub";
+                let id = barterItem.sku;
+                return request({
+                    "method": "GET",
+                    "url":    `https://gg.deals/steam/${type}/${id}`,
+                    "onload": (response) => {
+                        let parser = new DOMParser();
+                        let body = parser.parseFromString(response.responseText, "text/html");
+                        let price = $("#game-header-current-prices .price", body).get()
+                        .map((t) => t.innerText)
+                        .join(" / ");
+                        $(`[id="ggdeals_${barterId}_after"]`).html(` (<a href="https://gg.deals/steam/${type}/${id}" title="GG.Deals current lowest price (Official Stores / Keyshops)">${price}</a>)`);
+                    },
+                });
+        });
+        tempI++;
+    });
 
     // The match page and user profile page
     $("#tradeUser [label=Groups] option, [name=group] option").get()
